@@ -1,75 +1,104 @@
-# React + TypeScript + Vite
+# Function Knowledge Base
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A personal, reusable knowledge base for collecting functions and code patterns in multiple implementations, then reviewing and reusing them efficiently.
 
-Currently, two official plugins are available:
+## Current capabilities
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Hierarchical categories for languages, frameworks, and subcategories
+- Function search, sorting, learning-status filtering, and favorites
+- Multiple code variants with syntax highlighting
+- Tags, related functions, notes, recent items, and popular items
+- Learning status: unlearned / learning / mastered
+- Review page for revisiting saved knowledge
+- Admin pages for managing functions, categories, and tags
+- Light / dark theme
+- Android packaging through Capacitor
 
-## React Compiler
+## Tech stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Frontend
 
-## Expanding the ESLint configuration
+- React 19
+- TypeScript
+- Vite
+- React Router
+- react-syntax-highlighter
+- Capacitor 8
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Backend
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js
+- Express 5
+- Prisma 7
+- PostgreSQL
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+## Project structure
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```text
+.
+├─ src/                 React application
+│  ├─ components/       Reusable UI and knowledge-detail components
+│  ├─ pages/            Library, review, and admin pages
+│  ├─ lib/              API/auth helpers
+│  └─ types/            Shared frontend types
+├─ server/              Express + Prisma backend
+│  ├─ prisma/           Schema and migrations
+│  └─ src/              API server
+├─ android/             Capacitor Android project
+└─ scripts/             Project setup scripts
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Local development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Install frontend dependencies:
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
+```
 
+Install backend dependencies:
+
+```bash
+npm --prefix server install
+```
+
+Start the frontend:
+
+```bash
+npm run dev
+```
+
+Start the backend:
+
+```bash
+npm --prefix server run dev
+```
+
+## Quality checks
+
+Frontend lint and production build:
+
+```bash
+npm run lint
+npm run build
+```
+
+Backend type check:
+
+```bash
+npm --prefix server run typecheck
+```
+
+## Android
+
+Sync the current web build into the Capacitor Android project:
+
+```bash
+npm run android:sync
+```
+
+Open Android Studio:
+
+```bash
+npm run android:open
 ```

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   Prism as SyntaxHighlighter,
@@ -221,6 +221,17 @@ function FunctionDetail({
   const [noteMessage, setNoteMessage] =
     useState('');
 
+  useEffect(() => {
+    setSelectedVariantId(null);
+    setNoteDraft(functionEntry?.note ?? '');
+    setNoteMessage('');
+    setCopied(false);
+    setLinkCopied(false);
+  }, [
+    functionEntry?.id,
+    functionEntry?.note,
+  ]);
+
   const selectedVariant =
     functionEntry?.variants.find(
       (variant) =>
@@ -316,29 +327,31 @@ function FunctionDetail({
           {functionEntry.name}
         </h1>
 
-        <button
-          type="button"
-          className="favorite-button"
-          onClick={copyFunctionLink}
-        >
-          {linkCopied
-            ? '✓ 链接已复制'
-            : '复制链接'}
-        </button>
+        <div className="function-title-actions">
+          <button
+            type="button"
+            className="favorite-button"
+            onClick={copyFunctionLink}
+          >
+            {linkCopied
+              ? '✓ 链接已复制'
+              : '复制链接'}
+          </button>
 
-        <button
-          type="button"
-          className="favorite-button"
-          onClick={() =>
-            onToggleFavorite(
-              functionEntry,
-            )
-          }
-        >
-          {functionEntry.favorite
-            ? '★ 已收藏'
-            : '☆ 收藏'}
-        </button>
+          <button
+            type="button"
+            className="favorite-button"
+            onClick={() =>
+              onToggleFavorite(
+                functionEntry,
+              )
+            }
+          >
+            {functionEntry.favorite
+              ? '★ 已收藏'
+              : '☆ 收藏'}
+          </button>
+        </div>
       </div>
 
       <section className="learning-status-control">

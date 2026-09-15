@@ -27,6 +27,7 @@ function ThemeToggle() {
       type="button"
       className="app-theme-toggle"
       onClick={toggleTheme}
+      aria-pressed={dark}
       aria-label={
         dark
           ? '切换到日间模式'

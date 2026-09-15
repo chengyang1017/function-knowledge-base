@@ -1058,3 +1058,52 @@ h3 {
     flex-wrap: wrap;
   }
 }
+
+/* Existing UI polish: header actions and keyboard focus */
+.library-header-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.library-header-actions > a {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid #d8dce5;
+  border-radius: 10px;
+  background: #fff;
+  color: #4b5563;
+  text-decoration: none;
+}
+
+.library-header-actions > a:hover {
+  border-color: #b8bfcc;
+  background: #f7f8fa;
+}
+
+:where(
+  a,
+  button,
+  input,
+  select,
+  textarea,
+  summary
+):focus-visible {
+  outline: 3px solid rgba(79, 70, 229, 0.32);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
