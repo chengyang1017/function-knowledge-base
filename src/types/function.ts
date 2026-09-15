@@ -1,6 +1,7 @@
 export type FunctionVariant = {
   id: number;
   name: string;
+  language: string;
   code: string;
   explanation?: string | null;
 

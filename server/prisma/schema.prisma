@@ -75,3 +75,24 @@ model Tag {
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 }
+
+model FunctionVariant {
+  id          Int    @id @default(autoincrement())
+  name        String
+  language    String @default("plaintext")
+  code        String
+  explanation String?
+
+  sourceName  String?
+  sourceUrl   String?
+
+  functionId  Int
+  function    FunctionEntry @relation(
+    fields: [functionId],
+    references: [id],
+    onDelete: Cascade
+  )
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
