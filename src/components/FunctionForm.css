@@ -1,0 +1,52 @@
+.code-editor-field {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  color: #4b5563;
+  font-weight: 600;
+}
+
+.code-editor-shell {
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid #d7dce3;
+  border-radius: 10px;
+  background: #fff;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.code-editor-shell:focus-within {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+/* Monaco owns its hidden input textarea. Do not let the app-wide
+   textarea styling turn that input layer into a normal form field. */
+.code-editor-shell textarea.inputarea {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  resize: none;
+  transition: none;
+}
+
+html[data-theme='dark'] .code-editor-field {
+  color: #c7d2e1;
+}
+
+html[data-theme='dark'] .code-editor-shell {
+  border-color: #2a394b;
+  background: #0d1520;
+}
+
+html[data-theme='dark'] .code-editor-shell:focus-within {
+  border-color: #6172d9;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.18);
+}
