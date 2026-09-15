@@ -1,8 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import Editor, { type BeforeMount } from '@monaco-editor/react';
+import Editor, {
+  type BeforeMount,
+  type OnMount,
+} from '@monaco-editor/react';
 
 import { apiUrl } from '../lib/api';
 import type { Category, Tag } from '../types/function';
+import './FunctionForm.css';
 
 export type VariantForm = {
   name: string;
@@ -213,7 +217,9 @@ function FunctionForm({
         'editorLineNumber.activeForeground': '#374151',
       },
     });
+  };
 
+  const handleEditorMount: OnMount = (_editor, monaco) => {
     const nextLanguages: LanguageOption[] = monaco.languages
       .getLanguages()
       .map((language: MonacoLanguage) => ({
@@ -542,42 +548,47 @@ function FunctionForm({
               </select>
             </label>
 
-            <label>
-              代码
-              <Editor
-                height="320px"
-                beforeMount={handleEditorBeforeMount}
-                theme={
-                  editorTheme === 'dark'
-                    ? 'site-dark'
-                    : 'site-light'
-                }
-                language={
-                  variant.language || 'plaintext'
-                }
-                value={variant.code}
-                onChange={(value) =>
-                  updateVariant(
-                    index,
-                    'code',
-                    value ?? '',
-                  )
-                }
-                options={{
-                  minimap: {
-                    enabled: false,
-                  },
-                  automaticLayout: true,
-                  autoIndent: 'full',
-                  formatOnType: true,
-                  formatOnPaste: true,
-                  tabSize: 2,
-                  insertSpaces: true,
-                  scrollBeyondLastLine: false,
-                  overviewRulerBorder: false,
-                }}
-              />
-            </label>
+            <div className="code-editor-field">
+              <span>代码</span>
+              <div className="code-editor-shell">
+                <Editor
+                  height="320px"
+                  beforeMount={handleEditorBeforeMount}
+                  onMount={handleEditorMount}
+                  theme={
+                    editorTheme === 'dark'
+                      ? 'site-dark'
+                      : 'site-light'
+                  }
+                  language={
+                    variant.language || 'plaintext'
+                  }
+                  value={variant.code}
+                  onChange={(value) =>
+                    updateVariant(
+                      index,
+                      'code',
+                      value ?? '',
+                    )
+                  }
+                  options={{
+                    readOnly: false,
+                    domReadOnly: false,
+                    minimap: {
+                      enabled: false,
+                    },
+                    automaticLayout: true,
+                    autoIndent: 'full',
+                    formatOnType: true,
+                    formatOnPaste: true,
+                    tabSize: 2,
+                    insertSpaces: true,
+                    scrollBeyondLastLine: false,
+                    overviewRulerBorder: false,
+                  }}
+                />
+              </div>
+            </div>
 
             <label>
               解释
