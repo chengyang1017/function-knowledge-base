@@ -42,6 +42,11 @@ type LanguageOption = {
   label: string;
 };
 
+type MonacoLanguage = {
+  id: string;
+  aliases?: string[];
+};
+
 function getCategoryPath(
   category: Category,
   categories: Category[],
@@ -209,9 +214,9 @@ function FunctionForm({
       },
     });
 
-    const nextLanguages = monaco.languages
+    const nextLanguages: LanguageOption[] = monaco.languages
       .getLanguages()
-      .map((language) => ({
+      .map((language: MonacoLanguage) => ({
         id: language.id,
         label: language.aliases?.[0] ?? language.id,
       }));
