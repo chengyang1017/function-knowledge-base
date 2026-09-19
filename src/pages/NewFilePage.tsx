@@ -6,7 +6,7 @@ function NewFilePage() {
   const navigate = useNavigate();
 
   return (
-    <main className="new-function-page">
+    <main className="code-artifact-admin-page">
       <header className="admin-header">
         <div>
           <h1>新增文件</h1>
