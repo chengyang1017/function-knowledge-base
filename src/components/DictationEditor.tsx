@@ -82,6 +82,15 @@ const STRUCTURE_KEYWORDS = new Set([
   'yield',
 ]);
 
+const AUTO_CLOSING_CHARS = new Set([
+  ')',
+  ']',
+  '}',
+  '"',
+  "'",
+  '`',
+]);
+
 function compactCode(value: string): string {
   let compact = '';
   let quote: '"' | "'" | '`' | null = null;
@@ -122,6 +131,17 @@ function compactCode(value: string): string {
   return compact;
 }
 
+function containsOnlyAutoClosers(value: string): boolean {
+  const compact = compactCode(value);
+
+  return (
+    compact.length > 0 &&
+    [...compact].every((char) =>
+      AUTO_CLOSING_CHARS.has(char),
+    )
+  );
+}
+
 function checkDraft(
   draft: string,
   answer: string,
@@ -153,8 +173,28 @@ function checkDraft(
     draft.slice(safeCursorOffset),
   );
 
+  if (!target.startsWith(beforeCursor)) {
+    return 'wrong';
+  }
+
+  // Monaco inserts closing pairs before the user has filled their contents.
+  // For example, typing `getVideos(` immediately creates `getVideos()` and
+  // typing `{` creates `{}`. Those generated closers can also be nested, so a
+  // draft may temporarily look like `getVideos()}` even though the answer has
+  // many lines between `)` and the final `}`. As long as everything already
+  // typed before the cursor is still an exact answer prefix, treat a suffix
+  // made only of auto-closing characters as unfinished structure, not an error.
   if (
-    target.startsWith(beforeCursor) &&
+    afterCursor.length === 0 ||
+    containsOnlyAutoClosers(afterCursor)
+  ) {
+    return 'progress';
+  }
+
+  // When editing in the middle of already-written code, preserve the earlier
+  // hole-based behaviour: the prefix before the cursor and the suffix after
+  // it may surround content that has not been typed yet.
+  if (
     target.endsWith(afterCursor) &&
     beforeCursor.length + afterCursor.length <=
       target.length
