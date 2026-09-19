@@ -49,6 +49,40 @@
   font-weight: 750;
 }
 
+.function-source-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  margin: -2px 0 16px;
+}
+
+.function-source-links > span {
+  color: var(--theme-muted);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.function-source-links > a {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid var(--theme-border);
+  border-radius: 9px;
+  background: var(--theme-surface);
+  color: var(--theme-accent-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.function-source-links > a:hover {
+  border-color: var(--theme-accent);
+  background: var(--theme-accent-soft);
+  text-decoration: none;
+}
+
 /* Collapsed mode remains the same composed surface. The taxonomy does not turn
    into a floating button; it becomes a narrow rail that shares the full height,
    border and corners with the detail pane. */
