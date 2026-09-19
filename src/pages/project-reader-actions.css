@@ -1,24 +1,5 @@
 .project-reader-header-actions .project-delete-button {
-  display: inline-flex;
-  width: auto;
-  min-height: 40px;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--theme-danger) 58%, var(--theme-border)) !important;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--theme-danger) 10%, var(--theme-surface-soft)) !important;
-  color: var(--theme-danger) !important;
-  font-weight: 800;
-}
-
-.project-reader-header-actions .project-delete-button:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--theme-danger) 16%, var(--theme-surface-soft)) !important;
-}
-
-.project-reader-header-actions .project-delete-button:disabled {
-  cursor: wait;
-  opacity: 0.68;
+  display: none !important;
 }
 
 .project-reader-action-message {
