@@ -6,6 +6,49 @@
   background: transparent !important;
 }
 
+/* Expanded mode is one composed split surface, not two unrelated cards.
+   The taxonomy owns the left corners, the detail owns the right corners,
+   and there is no seam or dead gap between them. */
+.library-layout:has(.library-top-nav.taxonomy-open) {
+  column-gap: 0;
+}
+
+.library-top-nav.taxonomy-open .library-taxonomy-panel {
+  margin-right: 0;
+  margin-bottom: 18px;
+  border-right: 0;
+  border-radius: 16px 0 0 16px;
+  box-shadow: none !important;
+}
+
+.library-top-nav.taxonomy-open ~ .function-detail {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 0;
+  margin-right: 24px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid var(--theme-border);
+  border-left: 0;
+  border-radius: 0 16px 16px 0;
+  background: var(--theme-surface) !important;
+}
+
+/* Monaco dictation controls sit beside Copy without shifting the heading. */
+.variant-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.dictation-toggle.active {
+  border-color: var(--theme-accent) !important;
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent-strong) !important;
+  font-weight: 750;
+}
+
 /* When the taxonomy is collapsed, behave like a real sidebar: the left column
    becomes a narrow rail instead of reserving the full 440px. */
 .library-layout:has(.library-top-nav.taxonomy-collapsed) {
@@ -58,13 +101,16 @@
 }
 
 /* Expanded and collapsed modes must start the detail at the exact same vertical
-   position. The base stylesheet used to move the detail to grid row 3 when the
-   taxonomy collapsed, which created the extra empty horizontal band. Keep the
-   detail in row 2 beside the narrow collapsed rail instead. */
+   position. Keep the detail in row 2 beside the narrow collapsed rail. */
 .library-top-nav.taxonomy-collapsed ~ .function-detail {
   grid-column: 2 !important;
   grid-row: 2 !important;
   width: auto !important;
+  margin-right: 24px;
+  margin-bottom: 18px;
+  overflow: hidden;
+  border: 1px solid var(--theme-border);
+  border-radius: 16px;
 }
 
 @media (max-width: 720px) {
@@ -76,5 +122,10 @@
     width: 38px;
     min-width: 38px;
     margin-left: 5px;
+  }
+
+  .library-top-nav.taxonomy-open ~ .function-detail,
+  .library-top-nav.taxonomy-collapsed ~ .function-detail {
+    margin-right: 12px;
   }
 }
