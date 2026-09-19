@@ -16,6 +16,14 @@ type ImportedFile = {
   bytes: number;
 };
 
+type ImportStage =
+  | 'idle'
+  | 'waiting'
+  | 'reading'
+  | 'ready'
+  | 'saving'
+  | 'error';
+
 function getCategoryPath(categoryId: number, categories: Category[]) {
   const names: string[] = [];
   const visited = new Set<number>();
@@ -45,6 +53,7 @@ function NewProjectPage() {
   const [folderName, setFolderName] = useState('');
   const [reading, setReading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [stage, setStage] = useState<ImportStage>('idle');
   const [message, setMessage] = useState('');
 
   useEffect(() => {
@@ -62,7 +71,11 @@ function NewProjectPage() {
         return response.json() as Promise<Category[]>;
       })
       .then(setCategories)
-      .catch(console.error);
+      .catch((error) => {
+        console.error(error);
+        setStage('error');
+        setMessage('分类加载失败，请刷新页面后重试。');
+      });
   }, []);
 
   const leafCategories = useMemo(() => {
@@ -88,13 +101,29 @@ function NewProjectPage() {
       .filter(Boolean),
   ).size;
 
+  function openDirectoryPicker() {
+    if (reading || saving) {
+      return;
+    }
+
+    setStage('waiting');
+    setMessage('等待你选择项目目录… 选择完成后会立即显示读取进度。');
+
+    window.requestAnimationFrame(() => {
+      directoryInputRef.current?.click();
+    });
+  }
+
   async function chooseDirectory(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) {
+      setStage('idle');
+      setMessage('未选择目录。');
       return;
     }
 
     setReading(true);
-    setMessage('');
+    setStage('reading');
+    setMessage('正在检查项目目录…');
 
     try {
       const selectedFiles = Array.from(fileList);
@@ -111,71 +140,109 @@ function NewProjectPage() {
         );
       });
 
+      setFolderName(rootName);
+
       if (dartFiles.length === 0) {
         setFiles([]);
-        setFolderName(rootName);
-        setMessage('这个目录的 lib 下没有找到 Dart 文件。');
+        setStage('error');
+        setMessage('读取失败：这个目录的 lib 下没有找到 Dart 文件。');
         return;
       }
 
       if (dartFiles.length > 300) {
-        setMessage('lib 下超过 300 个 Dart 文件，请先缩小项目范围。');
+        setFiles([]);
+        setStage('error');
+        setMessage(`读取失败：lib 下有 ${dartFiles.length} 个 Dart 文件，超过目前 300 个文件的上限。`);
         return;
       }
 
-      const imported = await Promise.all(
-        dartFiles.map(async (file): Promise<ImportedFile> => {
-          const relativePath = (file.webkitRelativePath || file.name).replaceAll('\\', '/');
-          const marker = relativePath.indexOf('lib/');
-          const path = marker >= 0 ? relativePath.slice(marker) : relativePath;
-          const code = await file.text();
-          return {
-            path,
-            code,
-            bytes: new Blob([code]).size,
-          };
-        }),
-      );
+      const imported: ImportedFile[] = [];
+      let importedBytes = 0;
 
-      const tooLarge = imported.find((file) => file.bytes > 1024 * 1024);
-      if (tooLarge) {
-        setMessage(`${tooLarge.path} 超过 1 MB，暂时不能导入。`);
-        return;
-      }
+      for (let index = 0; index < dartFiles.length; index += 1) {
+        const file = dartFiles[index];
+        const relativePath = (file.webkitRelativePath || file.name).replaceAll('\\', '/');
+        const marker = relativePath.indexOf('lib/');
+        const path = marker >= 0 ? relativePath.slice(marker) : relativePath;
 
-      const bytes = imported.reduce((total, file) => total + file.bytes, 0);
-      if (bytes > 15 * 1024 * 1024) {
-        setMessage('lib 代码总量超过 15 MB，暂时不能导入。');
-        return;
+        setMessage(
+          `正在读取 lib：${index + 1} / ${dartFiles.length} · ${path}`,
+        );
+
+        const code = await file.text();
+        const bytes = new Blob([code]).size;
+
+        if (bytes > 1024 * 1024) {
+          setFiles([]);
+          setStage('error');
+          setMessage(`读取失败：${path} 超过 1 MB，暂时不能导入。`);
+          return;
+        }
+
+        importedBytes += bytes;
+        if (importedBytes > 15 * 1024 * 1024) {
+          setFiles([]);
+          setStage('error');
+          setMessage('读取失败：lib 代码总量超过 15 MB，暂时不能导入。');
+          return;
+        }
+
+        imported.push({
+          path,
+          code,
+          bytes,
+        });
       }
 
       imported.sort((left, right) => left.path.localeCompare(right.path));
       setFiles(imported);
-      setFolderName(rootName);
       if (!name.trim() && rootName) {
         setName(rootName);
       }
+
+      setStage('ready');
+      setMessage(
+        `读取完成：已找到 ${imported.length} 个 Dart 文件，共 ${(importedBytes / 1024).toFixed(1)} KB。现在可以导入。`,
+      );
+    } catch (error) {
+      console.error(error);
+      setFiles([]);
+      setStage('error');
+      setMessage(
+        error instanceof Error
+          ? `读取失败：${error.message}`
+          : '读取失败：浏览器无法读取这个目录。',
+      );
     } finally {
       setReading(false);
+      if (directoryInputRef.current) {
+        directoryInputRef.current.value = '';
+      }
     }
   }
 
   async function submit() {
     if (!name.trim()) {
-      setMessage('请输入项目名称。');
+      setStage('error');
+      setMessage('导入失败：请输入项目名称。');
       return;
     }
     if (categoryId === '') {
-      setMessage('请选择最底层子分类。');
+      setStage('error');
+      setMessage('导入失败：请选择最底层子分类。');
       return;
     }
     if (files.length === 0) {
-      setMessage('请先选择 Flutter 项目目录。');
+      setStage('error');
+      setMessage('导入失败：请先选择 Flutter 项目目录。');
       return;
     }
 
     setSaving(true);
-    setMessage('');
+    setStage('saving');
+    setMessage(
+      `正在上传 ${files.length} 个 Dart 文件并建立项目索引… 项目较大时这里会需要一点时间，请不要关闭页面。`,
+    );
 
     try {
       const response = await fetch(apiUrl('/api/projects'), {
@@ -196,12 +263,19 @@ function NewProjectPage() {
 
       const body = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(body.message || '导入项目失败');
+        throw new Error(body.message || `服务器返回 ${response.status}`);
       }
 
+      setMessage('导入成功，正在打开项目阅读工作区…');
       navigate(`/projects?project=${body.id}`);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '导入项目失败');
+      console.error(error);
+      setStage('error');
+      setMessage(
+        error instanceof Error
+          ? `导入失败：${error.message}`
+          : '导入失败：无法连接服务器，请稍后重试。',
+      );
     } finally {
       setSaving(false);
     }
@@ -263,20 +337,41 @@ function NewProjectPage() {
         <div className="project-folder-picker">
           <div>
             <strong>选择 Flutter 项目目录</strong>
-            <p>浏览器只会读取你选择目录里的 <code>lib/**/*.dart</code>；android、ios、assets、build、.dart_tool 都不会上传。</p>
+            <p>浏览器只会保存 <code>lib/**/*.dart</code> 到知识库；android、ios、assets、build、.dart_tool 不会进入数据库。</p>
           </div>
 
-          <label className="project-folder-button">
-            {reading ? '读取中...' : files.length > 0 ? '重新选择目录' : '选择项目目录'}
-            <input
-              ref={directoryInputRef}
-              type="file"
-              multiple
-              disabled={reading || saving}
-              onChange={(event) => void chooseDirectory(event.target.files)}
-            />
-          </label>
+          <button
+            type="button"
+            className="project-folder-button"
+            onClick={openDirectoryPicker}
+            disabled={reading || saving}
+          >
+            {reading ? '正在读取…' : files.length > 0 ? '重新选择目录' : '选择项目目录'}
+          </button>
+          <input
+            ref={directoryInputRef}
+            className="project-folder-input"
+            type="file"
+            multiple
+            disabled={reading || saving}
+            onChange={(event) => void chooseDirectory(event.target.files)}
+          />
         </div>
+
+        {(message || stage === 'reading' || stage === 'saving') && (
+          <div
+            className={`project-import-status ${stage}`}
+            role={stage === 'error' ? 'alert' : 'status'}
+            aria-live="polite"
+          >
+            {(stage === 'reading' || stage === 'saving' || stage === 'waiting') && (
+              <span className="project-import-spinner" aria-hidden="true" />
+            )}
+            {stage === 'ready' && <span className="project-import-status-icon">✓</span>}
+            {stage === 'error' && <span className="project-import-status-icon">!</span>}
+            <span>{message}</span>
+          </div>
+        )}
 
         {files.length > 0 && (
           <section className="project-import-preview">
@@ -313,9 +408,8 @@ function NewProjectPage() {
             onClick={() => void submit()}
             disabled={saving || reading || files.length === 0}
           >
-            {saving ? '正在建立项目索引...' : '导入并建立阅读工作区'}
+            {saving ? '正在建立项目索引…' : '导入并建立阅读工作区'}
           </button>
-          {message && <span>{message}</span>}
         </div>
       </section>
     </main>
