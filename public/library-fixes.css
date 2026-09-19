@@ -1,0 +1,70 @@
+/* Library navigation refinements. */
+
+/* Prism's default operator token style can paint a pale box behind =, +, etc.
+   Keep operator/token backgrounds transparent so code reads like a normal editor. */
+.function-detail pre code span {
+  background: transparent !important;
+}
+
+/* When the taxonomy is collapsed, behave like a real sidebar: the left column
+   becomes a narrow rail instead of reserving the full 440px. */
+.library-layout:has(.library-top-nav.taxonomy-collapsed) {
+  grid-template-columns: 58px minmax(0, 1fr);
+}
+
+.library-top-nav.taxonomy-collapsed .library-taxonomy-panel {
+  width: 42px;
+  min-width: 42px;
+  margin-right: 0;
+  margin-left: 8px;
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.library-top-nav.taxonomy-collapsed .library-taxonomy-header {
+  min-height: 54px;
+  justify-content: center;
+  padding: 6px;
+  border-bottom: 0;
+}
+
+.library-top-nav.taxonomy-collapsed .library-taxonomy-header > div {
+  display: none;
+}
+
+.library-top-nav.taxonomy-collapsed .library-taxonomy-collapse {
+  display: inline-flex;
+  width: 30px;
+  min-width: 30px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  font-size: 0;
+}
+
+.library-top-nav.taxonomy-collapsed .library-taxonomy-collapse::before {
+  content: '›';
+  color: #687386;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.library-top-nav.taxonomy-collapsed .library-taxonomy-collapse:hover {
+  background: #f3f4f6;
+}
+
+@media (max-width: 720px) {
+  .library-layout:has(.library-top-nav.taxonomy-collapsed) {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+
+  .library-top-nav.taxonomy-collapsed .library-taxonomy-panel {
+    width: 38px;
+    min-width: 38px;
+    margin-left: 5px;
+  }
+}
