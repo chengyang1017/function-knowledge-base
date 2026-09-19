@@ -51,14 +51,23 @@ type MonacoLanguage = {
   aliases?: string[];
 };
 
+const FUNCTION_CATEGORY_DEPTH = 3;
+
 function getCategoryPath(
   category: Category,
   categories: Category[],
 ): string {
   const names = [category.name];
+  const visited = new Set<number>([category.id]);
   let parentId = category.parentId;
 
   while (parentId !== null) {
+    if (visited.has(parentId)) {
+      break;
+    }
+
+    visited.add(parentId);
+
     const parent = categories.find(
       (item) => item.id === parentId,
     );
@@ -72,6 +81,48 @@ function getCategoryPath(
   }
 
   return names.join(' → ');
+}
+
+function getCategoryDepth(
+  category: Category,
+  categories: Category[],
+): number | null {
+  const visited = new Set<number>([category.id]);
+  let depth = 0;
+  let parentId = category.parentId;
+
+  while (parentId !== null) {
+    if (visited.has(parentId)) {
+      return null;
+    }
+
+    visited.add(parentId);
+
+    const parent = categories.find(
+      (item) => item.id === parentId,
+    );
+
+    if (!parent) {
+      return null;
+    }
+
+    depth += 1;
+    parentId = parent.parentId;
+  }
+
+  return depth;
+}
+
+function isFunctionCategory(
+  category: Category,
+  categories: Category[],
+): boolean {
+  const depth = getCategoryDepth(category, categories);
+  const hasChildren = categories.some(
+    (item) => item.parentId === category.id,
+  );
+
+  return depth === FUNCTION_CATEGORY_DEPTH && !hasChildren;
 }
 
 function makeEmptyVariant(name = ''): VariantForm {
@@ -102,46 +153,34 @@ function FunctionForm({
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>(
     initialValue?.tagIds ?? [],
   );
-  const [
-    selectedRelatedFunctionIds,
-    setSelectedRelatedFunctionIds,
-  ] = useState<number[]>(
-    initialValue?.relatedFunctionIds ?? [],
-  );
+  const [selectedRelatedFunctionIds, setSelectedRelatedFunctionIds] =
+    useState<number[]>(initialValue?.relatedFunctionIds ?? []);
   const [variants, setVariants] = useState<VariantForm[]>(
     initialValue?.variants ?? [makeEmptyVariant('基础版')],
   );
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
-  const [functionOptions, setFunctionOptions] = useState<
-    FunctionOption[]
-  >([]);
+  const [functionOptions, setFunctionOptions] = useState<FunctionOption[]>([]);
   const [saving, setSaving] = useState(false);
   const [formMessage, setFormMessage] = useState('');
-  const [editorTheme, setEditorTheme] = useState<EditorTheme>(
-    () =>
-      document.documentElement.dataset.theme === 'dark'
-        ? 'dark'
-        : 'light',
+  const [editorTheme, setEditorTheme] = useState<EditorTheme>(() =>
+    document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
   );
-  const [languageOptions, setLanguageOptions] = useState<
-    LanguageOption[]
-  >([{ id: 'plaintext', label: 'Plain Text' }]);
+  const [languageOptions, setLanguageOptions] = useState<LanguageOption[]>([
+    { id: 'plaintext', label: 'Plain Text' },
+  ]);
 
   useEffect(() => {
     const syncTheme = () => {
       setEditorTheme(
-        document.documentElement.dataset.theme === 'dark'
-          ? 'dark'
-          : 'light',
+        document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
       );
     };
 
     syncTheme();
 
     const observer = new MutationObserver(syncTheme);
-
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ['data-theme'],
@@ -152,15 +191,12 @@ function FunctionForm({
 
   useEffect(() => {
     async function loadOptions() {
-      const [
-        categoriesResponse,
-        tagsResponse,
-        functionOptionsResponse,
-      ] = await Promise.all([
-        fetch(apiUrl('/api/categories')),
-        fetch(apiUrl('/api/tags')),
-        fetch(apiUrl('/api/function-options')),
-      ]);
+      const [categoriesResponse, tagsResponse, functionOptionsResponse] =
+        await Promise.all([
+          fetch(apiUrl('/api/categories')),
+          fetch(apiUrl('/api/tags')),
+          fetch(apiUrl('/api/function-options')),
+        ]);
 
       if (!categoriesResponse.ok) {
         throw new Error('加载分类失败');
@@ -174,8 +210,7 @@ function FunctionForm({
         throw new Error('加载相关函数选项失败');
       }
 
-      const categoryData: Category[] =
-        await categoriesResponse.json();
+      const categoryData: Category[] = await categoriesResponse.json();
       const tagData: Tag[] = await tagsResponse.json();
       const functionOptionData: FunctionOption[] =
         await functionOptionsResponse.json();
@@ -227,11 +262,7 @@ function FunctionForm({
         label: language.aliases?.[0] ?? language.id,
       }));
 
-    if (
-      !nextLanguages.some(
-        (language) => language.id === 'plaintext',
-      )
-    ) {
+    if (!nextLanguages.some((language) => language.id === 'plaintext')) {
       nextLanguages.push({
         id: 'plaintext',
         label: 'Plain Text',
@@ -264,10 +295,7 @@ function FunctionForm({
   }
 
   function addVariant() {
-    setVariants((current) => [
-      ...current,
-      makeEmptyVariant(),
-    ]);
+    setVariants((current) => [...current, makeEmptyVariant()]);
   }
 
   function updateVariant(
@@ -289,15 +317,11 @@ function FunctionForm({
 
   function removeVariant(index: number) {
     setVariants((current) =>
-      current.filter(
-        (_, variantIndex) => variantIndex !== index,
-      ),
+      current.filter((_, variantIndex) => variantIndex !== index),
     );
   }
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!name.trim()) {
@@ -306,18 +330,19 @@ function FunctionForm({
     }
 
     if (categoryId === null) {
-      setFormMessage('请选择分类');
+      setFormMessage('请选择子分类');
       return;
     }
 
-    const selectedCategoryHasChildren = categories.some(
-      (category) => category.parentId === categoryId,
+    const selectedCategory = categories.find(
+      (category) => category.id === categoryId,
     );
 
-    if (selectedCategoryHasChildren) {
-      setFormMessage(
-        '请选择最末级分类，父分类只能作为目录',
-      );
+    if (
+      !selectedCategory ||
+      !isFunctionCategory(selectedCategory, categories)
+    ) {
+      setFormMessage('函数必须归到最底层的子分类');
       return;
     }
 
@@ -327,14 +352,11 @@ function FunctionForm({
     }
 
     const hasInvalidVariant = variants.some(
-      (variant) =>
-        !variant.name.trim() || !variant.code.trim(),
+      (variant) => !variant.name.trim() || !variant.code.trim(),
     );
 
     if (hasInvalidVariant) {
-      setFormMessage(
-        '每种写法都需要填写版本名称和代码',
-      );
+      setFormMessage('每种写法都需要填写版本名称和代码');
       return;
     }
 
@@ -350,8 +372,7 @@ function FunctionForm({
         relatedFunctionIds: selectedRelatedFunctionIds,
         variants: variants.map((variant) => ({
           name: variant.name.trim(),
-          language:
-            variant.language.trim() || 'plaintext',
+          language: variant.language.trim() || 'plaintext',
           code: variant.code,
           explanation: variant.explanation.trim(),
           sourceName: variant.sourceName.trim(),
@@ -370,47 +391,41 @@ function FunctionForm({
     (option) => option.id !== currentFunctionId,
   );
 
+  const selectableCategories = categories
+    .filter((category) => isFunctionCategory(category, categories))
+    .sort((left, right) =>
+      getCategoryPath(left, categories).localeCompare(
+        getCategoryPath(right, categories),
+        'zh-CN',
+      ),
+    );
+
   return (
     <form onSubmit={handleSubmit}>
       <label>
         函数名
         <input
           value={name}
-          onChange={(event) =>
-            setName(event.target.value)
-          }
+          onChange={(event) => setName(event.target.value)}
         />
       </label>
 
       <label>
-        分类
+        子分类
         <select
           value={categoryId ?? ''}
           onChange={(event) => {
             const value = event.target.value;
-            setCategoryId(
-              value === '' ? null : Number(value),
-            );
+            setCategoryId(value === '' ? null : Number(value));
           }}
         >
-          <option value="">请选择分类</option>
+          <option value="">请选择子分类</option>
 
-          {categories.map((category) => {
-            const hasChildren = categories.some(
-              (item) => item.parentId === category.id,
-            );
-
-            return (
-              <option
-                key={category.id}
-                value={category.id}
-                disabled={hasChildren}
-              >
-                {getCategoryPath(category, categories)}
-                {hasChildren ? '（分类组）' : ''}
-              </option>
-            );
-          })}
+          {selectableCategories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {getCategoryPath(category, categories)}
+            </option>
+          ))}
         </select>
       </label>
 
@@ -418,9 +433,7 @@ function FunctionForm({
         说明
         <textarea
           value={description}
-          onChange={(event) =>
-            setDescription(event.target.value)
-          }
+          onChange={(event) => setDescription(event.target.value)}
         />
       </label>
 
@@ -432,18 +445,13 @@ function FunctionForm({
         ) : (
           <div className="tag-options">
             {tags.map((tag) => {
-              const selected =
-                selectedTagIds.includes(tag.id);
+              const selected = selectedTagIds.includes(tag.id);
 
               return (
                 <button
                   key={tag.id}
                   type="button"
-                  className={
-                    selected
-                      ? 'tag-option active'
-                      : 'tag-option'
-                  }
+                  className={selected ? 'tag-option active' : 'tag-option'}
                   onClick={() => toggleTag(tag.id)}
                 >
                   {tag.name}
@@ -463,10 +471,7 @@ function FunctionForm({
         ) : (
           <div className="related-function-options">
             {availableFunctionOptions.map((option) => {
-              const selected =
-                selectedRelatedFunctionIds.includes(
-                  option.id,
-                );
+              const selected = selectedRelatedFunctionIds.includes(option.id);
 
               return (
                 <button
@@ -478,9 +483,7 @@ function FunctionForm({
                       : 'related-function-option'
                   }
                   aria-pressed={selected}
-                  onClick={() =>
-                    toggleRelatedFunction(option.id)
-                  }
+                  onClick={() => toggleRelatedFunction(option.id)}
                 >
                   {option.name}
                 </button>
@@ -494,15 +497,11 @@ function FunctionForm({
 
       {variants.map((variant, index) => {
         const hasCurrentLanguage = languageOptions.some(
-          (language) =>
-            language.id === variant.language,
+          (language) => language.id === variant.language,
         );
 
         return (
-          <section
-            key={index}
-            className="variant-form"
-          >
+          <section key={index} className="variant-form">
             <h3>写法 {index + 1}</h3>
 
             <label>
@@ -510,11 +509,7 @@ function FunctionForm({
               <input
                 value={variant.name}
                 onChange={(event) =>
-                  updateVariant(
-                    index,
-                    'name',
-                    event.target.value,
-                  )
+                  updateVariant(index, 'name', event.target.value)
                 }
               />
             </label>
@@ -524,24 +519,15 @@ function FunctionForm({
               <select
                 value={variant.language}
                 onChange={(event) =>
-                  updateVariant(
-                    index,
-                    'language',
-                    event.target.value,
-                  )
+                  updateVariant(index, 'language', event.target.value)
                 }
               >
                 {!hasCurrentLanguage && (
-                  <option value={variant.language}>
-                    {variant.language}
-                  </option>
+                  <option value={variant.language}>{variant.language}</option>
                 )}
 
                 {languageOptions.map((language) => (
-                  <option
-                    key={language.id}
-                    value={language.id}
-                  >
+                  <option key={language.id} value={language.id}>
                     {language.label} · {language.id}
                   </option>
                 ))}
@@ -555,21 +541,11 @@ function FunctionForm({
                   height="320px"
                   beforeMount={handleEditorBeforeMount}
                   onMount={handleEditorMount}
-                  theme={
-                    editorTheme === 'dark'
-                      ? 'site-dark'
-                      : 'site-light'
-                  }
-                  language={
-                    variant.language || 'plaintext'
-                  }
+                  theme={editorTheme === 'dark' ? 'site-dark' : 'site-light'}
+                  language={variant.language || 'plaintext'}
                   value={variant.code}
                   onChange={(value) =>
-                    updateVariant(
-                      index,
-                      'code',
-                      value ?? '',
-                    )
+                    updateVariant(index, 'code', value ?? '')
                   }
                   options={{
                     readOnly: false,
@@ -595,11 +571,7 @@ function FunctionForm({
               <textarea
                 value={variant.explanation}
                 onChange={(event) =>
-                  updateVariant(
-                    index,
-                    'explanation',
-                    event.target.value,
-                  )
+                  updateVariant(index, 'explanation', event.target.value)
                 }
               />
             </label>
@@ -609,11 +581,7 @@ function FunctionForm({
               <input
                 value={variant.sourceName}
                 onChange={(event) =>
-                  updateVariant(
-                    index,
-                    'sourceName',
-                    event.target.value,
-                  )
+                  updateVariant(index, 'sourceName', event.target.value)
                 }
                 placeholder="例如 Flutter 官方文档"
               />
@@ -625,21 +593,14 @@ function FunctionForm({
                 type="url"
                 value={variant.sourceUrl}
                 onChange={(event) =>
-                  updateVariant(
-                    index,
-                    'sourceUrl',
-                    event.target.value,
-                  )
+                  updateVariant(index, 'sourceUrl', event.target.value)
                 }
                 placeholder="https://..."
               />
             </label>
 
             {variants.length > 1 && (
-              <button
-                type="button"
-                onClick={() => removeVariant(index)}
-              >
+              <button type="button" onClick={() => removeVariant(index)}>
                 删除这个写法
               </button>
             )}
@@ -655,9 +616,7 @@ function FunctionForm({
         {saving ? '保存中...' : submitLabel}
       </button>
 
-      {(formMessage || message) && (
-        <p>{formMessage || message}</p>
-      )}
+      {(formMessage || message) && <p>{formMessage || message}</p>}
     </form>
   );
 }
