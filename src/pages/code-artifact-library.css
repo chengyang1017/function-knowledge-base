@@ -1,0 +1,319 @@
+.artifact-library-header {
+  align-items: center;
+}
+
+.artifact-brand-block {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 28px;
+}
+
+.artifact-brand-block h1 {
+  margin-bottom: 4px;
+}
+
+.artifact-brand-block p {
+  margin-bottom: 0;
+}
+
+.artifact-searchbar {
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--theme-border);
+  background: var(--theme-bg);
+}
+
+.artifact-searchbar input {
+  height: 44px;
+}
+
+.artifact-library-layout {
+  display: grid;
+  grid-template-columns: 430px minmax(0, 1fr);
+  min-height: calc(100vh - 154px);
+}
+
+.artifact-browser {
+  min-width: 0;
+  border-right: 1px solid var(--theme-border);
+  background: var(--theme-surface);
+}
+
+.artifact-taxonomy {
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.artifact-taxonomy-title,
+.artifact-item-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 18px;
+}
+
+.artifact-taxonomy-title button {
+  width: auto;
+  min-height: 30px;
+  border: 0;
+  padding: 4px 8px;
+  background: transparent !important;
+  color: var(--theme-muted) !important;
+}
+
+.artifact-taxonomy-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  min-height: 54px;
+  align-items: start;
+  gap: 10px;
+  padding: 8px 18px;
+  border-top: 1px dashed var(--theme-border);
+}
+
+.artifact-taxonomy-row > span {
+  padding-top: 8px;
+  color: var(--theme-muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.artifact-taxonomy-row > div {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.artifact-taxonomy-row button {
+  width: auto;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 9px;
+}
+
+.artifact-taxonomy-row button.active {
+  border-color: var(--theme-accent) !important;
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent-strong) !important;
+  font-weight: 750;
+}
+
+.artifact-item-list {
+  padding-bottom: 30px;
+}
+
+.artifact-item-list-heading {
+  border-bottom: 1px solid var(--theme-border);
+}
+
+.artifact-item-list-heading span {
+  color: var(--theme-muted);
+  font-size: 0.82rem;
+}
+
+.artifact-item-list > button {
+  display: flex;
+  width: calc(100% - 20px);
+  min-height: 58px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 3px;
+  margin: 5px 10px;
+  border: 0 !important;
+  border-radius: 10px;
+  background: transparent !important;
+  text-align: left;
+}
+
+.artifact-item-list > button:hover {
+  background: var(--theme-surface-soft) !important;
+}
+
+.artifact-item-list > button.active {
+  background: var(--theme-accent-soft) !important;
+  color: var(--theme-accent-strong) !important;
+}
+
+.artifact-item-list > button small {
+  color: var(--theme-muted);
+}
+
+.artifact-empty {
+  padding: 18px;
+  color: var(--theme-muted);
+}
+
+.artifact-detail {
+  min-width: 0;
+  padding: 38px clamp(28px, 5vw, 72px) 72px;
+  background: var(--theme-bg-elevated);
+}
+
+.artifact-detail > * {
+  max-width: 1180px;
+}
+
+.artifact-detail-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.artifact-detail-heading h1 {
+  margin: 8px 0 8px;
+}
+
+.artifact-detail-heading p {
+  margin-bottom: 8px;
+  color: var(--theme-text-soft);
+}
+
+.artifact-kind-badge {
+  display: inline-flex;
+  min-height: 25px;
+  align-items: center;
+  padding: 3px 8px;
+  border: 1px solid var(--theme-border-strong);
+  border-radius: 999px;
+  color: var(--theme-accent-strong);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+
+.artifact-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 8px 0 26px;
+}
+
+.artifact-meta-line > span,
+.artifact-meta-line > a {
+  display: inline-flex;
+  min-height: 30px;
+  align-items: center;
+  padding: 5px 9px;
+  border: 1px solid var(--theme-border);
+  border-radius: 9px;
+  background: var(--theme-surface);
+  color: var(--theme-text-soft);
+  font-size: 0.8rem;
+  text-decoration: none;
+}
+
+.artifact-members {
+  margin: 22px 0;
+}
+
+.artifact-members h2 {
+  margin-bottom: 10px;
+}
+
+.artifact-member-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 9px;
+}
+
+.artifact-member-grid > a {
+  display: flex;
+  min-width: 0;
+  min-height: 48px;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-border);
+  border-radius: 10px;
+  background: var(--theme-surface);
+  color: var(--theme-text-soft);
+  text-decoration: none;
+}
+
+.artifact-member-grid > a:hover {
+  border-color: var(--theme-border-strong);
+  background: var(--theme-surface-soft);
+}
+
+.artifact-member-grid > a > span {
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--theme-accent-soft);
+  color: var(--theme-accent-strong);
+  font-weight: 800;
+}
+
+.artifact-member-grid > a strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.artifact-member-grid > a small {
+  margin-left: auto;
+  color: var(--theme-muted);
+}
+
+.artifact-code-heading {
+  margin-top: 28px;
+}
+
+.artifact-detail pre {
+  max-width: 100%;
+  overflow: auto !important;
+  border: 1px solid var(--theme-border) !important;
+  background: var(--theme-code-bg) !important;
+  box-shadow: var(--theme-shadow-soft) !important;
+}
+
+.artifact-detail pre code span {
+  background: transparent !important;
+}
+
+.artifact-empty-state {
+  padding: 80px 20px;
+  color: var(--theme-muted);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .artifact-brand-block {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .artifact-library-layout {
+    grid-template-columns: 340px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .artifact-library-layout {
+    display: block;
+  }
+
+  .artifact-browser {
+    border-right: 0;
+    border-bottom: 1px solid var(--theme-border);
+  }
+
+  .artifact-detail {
+    padding: 28px 16px 64px;
+  }
+
+  .artifact-taxonomy-row {
+    grid-template-columns: 64px minmax(0, 1fr);
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+}
