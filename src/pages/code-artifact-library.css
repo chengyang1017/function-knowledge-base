@@ -275,6 +275,24 @@
   box-shadow: var(--theme-shadow-soft) !important;
 }
 
+/* Prism's default dark styles add colored text shadows to tokens. That looks
+   like red/blue ghosting on the Class/File pages, so keep the syntax colors
+   but remove every shadow and use a crisp editor-like monospace rendering. */
+.artifact-detail pre,
+.artifact-detail pre code,
+.artifact-detail pre * {
+  text-shadow: none !important;
+}
+
+.artifact-detail pre code {
+  font-family: "Cascadia Code", "Cascadia Mono", Consolas, "Courier New", monospace !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  line-height: 1.65 !important;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
 .artifact-detail pre code span {
   background: transparent !important;
 }
