@@ -18,6 +18,14 @@ model FunctionEntry {
   categoryId   Int?
   categoryNode Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
+  sourceClassId Int?
+  sourceClass   CodeClass? @relation("ClassMethods", fields: [sourceClassId], references: [id], onDelete: SetNull)
+
+  sourceFileId Int?
+  sourceFile   CodeFile? @relation("FileFunctions", fields: [sourceFileId], references: [id], onDelete: SetNull)
+
+  extracted Boolean @default(false)
+
   variants FunctionVariant[]
   tags     Tag[]
 
@@ -49,6 +57,42 @@ model FunctionVariant {
   updatedAt DateTime @updatedAt
 }
 
+model CodeFile {
+  id          Int      @id @default(autoincrement())
+  name        String
+  language    String   @default("plaintext")
+  code        String
+  description String?
+
+  categoryId   Int?
+  categoryNode Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  classes   CodeClass[]
+  functions FunctionEntry[] @relation("FileFunctions")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model CodeClass {
+  id          Int      @id @default(autoincrement())
+  name        String
+  language    String   @default("plaintext")
+  code        String
+  description String?
+
+  categoryId   Int?
+  categoryNode Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  sourceFileId Int?
+  sourceFile   CodeFile? @relation(fields: [sourceFileId], references: [id], onDelete: Cascade)
+
+  methods FunctionEntry[] @relation("ClassMethods")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Category {
   id   Int    @id @default(autoincrement())
   name String
@@ -59,6 +103,8 @@ model Category {
   children Category[] @relation("CategoryTree")
 
   functions FunctionEntry[]
+  classes   CodeClass[]
+  files     CodeFile[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
