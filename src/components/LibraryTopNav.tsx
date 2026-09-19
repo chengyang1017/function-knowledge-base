@@ -38,6 +38,13 @@ type LibraryTopNavProps = {
   ) => void;
 };
 
+const CATEGORY_LEVEL_LABELS = [
+  '语言',
+  '框架',
+  '分类',
+  '子分类',
+] as const;
+
 function getCategoryPath(
   categoryId: number,
   categories: Category[],
@@ -222,17 +229,28 @@ function LibraryTopNav({
 
   const categoryLevels: Category[][] = [
     rootCategories,
+    [],
+    [],
+    [],
   ];
 
-  activePath.forEach((category) => {
-    const children = categories.filter(
-      (item) => item.parentId === category.id,
-    );
+  for (
+    let levelIndex = 1;
+    levelIndex < CATEGORY_LEVEL_LABELS.length;
+    levelIndex += 1
+  ) {
+    const parentCategory =
+      activePath[levelIndex - 1];
 
-    if (children.length > 0) {
-      categoryLevels.push(children);
-    }
-  });
+    categoryLevels[levelIndex] =
+      parentCategory == null
+        ? []
+        : categories.filter(
+            (category) =>
+              category.parentId ===
+              parentCategory.id,
+          );
+  }
 
   const activeCategory =
     activeCategoryId === null
@@ -251,12 +269,19 @@ function LibraryTopNav({
             activeCategoryId,
         );
 
-  const searchActive = search.trim().length > 0;
+  const searchActive =
+    search.trim().length > 0;
+
+  const collapsedPathLabel =
+    activePath.length > 0
+      ? activePath
+          .map((category) => category.name)
+          .join(' › ')
+      : '尚未选择分类';
 
   function selectFunction(
     functionEntry: FunctionEntry,
   ) {
-    setCategoryPanelOpen(false);
     onSelect(functionEntry);
   }
 
@@ -457,188 +482,153 @@ function LibraryTopNav({
         </div>
       </div>
 
-      {categoryPanelOpen ? (
-        <section className="library-taxonomy-panel">
-          <div className="library-taxonomy-header">
-            <div>
-              <strong>浏览分类</strong>
-              <span>
-                像影视分类一样逐层筛选，分类结构始终保留
-              </span>
-            </div>
-
-            {selectedFunction && (
-              <button
-                type="button"
-                className="library-taxonomy-collapse"
-                onClick={() =>
-                  setCategoryPanelOpen(false)
-                }
-              >
-                收起
-              </button>
-            )}
-          </div>
-
-          <div className="library-taxonomy-rows">
-            {categoryLevels.map(
-              (levelCategories, levelIndex) => {
-                const parentCategory =
-                  levelIndex === 0
-                    ? null
-                    : activePath[levelIndex - 1] ??
-                      null;
-
-                const label =
-                  [
-                    '语言',
-                    '框架',
-                    '分类',
-                    '子分类',
-                  ][levelIndex] ?? '子分类';
-
-                return (
-                  <div
-                    key={parentCategory?.id ?? 'root'}
-                    className="library-taxonomy-row"
-                  >
-                    <div className="library-taxonomy-label">
-                      {label}
-                    </div>
-
-                    <div className="library-taxonomy-options">
-                      {levelCategories.map(
-                        (category) => {
-                          const active =
-                            activePath[levelIndex]?.id ===
-                            category.id;
-
-                          const functionCount =
-                            countFunctionsInCategory(
-                              category.id,
-                              categories,
-                              functions,
-                            );
-
-                          return (
-                            <button
-                              key={category.id}
-                              type="button"
-                              className={`library-taxonomy-option ${
-                                active ? 'active' : ''
-                              }`}
-                              aria-pressed={active}
-                              onClick={() =>
-                                selectCategory(category)
-                              }
-                            >
-                              <span>{category.name}</span>
-                              <small>{functionCount}</small>
-                            </button>
-                          );
-                        },
-                      )}
-                    </div>
-                  </div>
-                );
-              },
-            )}
-          </div>
-
-          {activeCategory && (
-            <div className="library-function-shelf">
-              <div className="library-function-shelf-heading">
-                <div>
-                  <span>当前分类</span>
-                  <strong>{activeCategory.name}</strong>
-                </div>
-
-                <span>
-                  {activeCategoryFunctions.length} 个知识点
-                </span>
-              </div>
-
-              {activeCategoryFunctions.length > 0 ? (
-                <div className="library-function-grid">
-                  {activeCategoryFunctions.map(
-                    (functionEntry) => (
-                      <button
-                        key={functionEntry.id}
-                        type="button"
-                        className={`library-function-card ${
-                          selectedFunctionId ===
-                          functionEntry.id
-                            ? 'active'
-                            : ''
-                        }`}
-                        onClick={() =>
-                          selectFunction(functionEntry)
-                        }
-                      >
-                        <span className="library-function-card-icon">
-                          ƒ
-                        </span>
-
-                        <span className="library-function-card-copy">
-                          <strong>
-                            {functionEntry.name}
-                          </strong>
-                          <small>
-                            {learningStatusLabel(
-                              functionEntry.learningStatus,
-                            )}
-                          </small>
-                        </span>
-                      </button>
-                    ),
-                  )}
-                </div>
-              ) : (
-                <div className="library-function-empty">
-                  这个分类已经建立，但当前筛选下还没有知识点。
-                </div>
-              )}
-            </div>
-          )}
-        </section>
-      ) : (
-        <section className="library-reading-strip">
-          <div className="library-reading-path">
-            <span className="library-reading-path-label">
-              当前分类
+      <section className="library-taxonomy-panel">
+        <div className="library-taxonomy-header">
+          <div>
+            <strong>浏览分类</strong>
+            <span>
+              {categoryPanelOpen
+                ? '四层分类固定显示；未选中的下一层保持为空'
+                : collapsedPathLabel}
             </span>
-
-            {activePath.length > 0 ? (
-              activePath.map((category) => (
-                <button
-                  key={category.id}
-                  type="button"
-                  onClick={() => {
-                    setActiveCategoryId(category.id);
-                    setCategoryPanelOpen(true);
-                  }}
-                >
-                  {category.name}
-                </button>
-              ))
-            ) : (
-              <span className="library-reading-path-empty">
-                尚未选择分类
-              </span>
-            )}
           </div>
 
           <button
             type="button"
-            className="library-change-category"
+            className="library-taxonomy-collapse"
+            aria-expanded={categoryPanelOpen}
             onClick={() =>
-              setCategoryPanelOpen(true)
+              setCategoryPanelOpen(
+                (current) => !current,
+              )
             }
           >
-            修改分类
+            {categoryPanelOpen ? '收起' : '展开'}
           </button>
-        </section>
-      )}
+        </div>
+
+        {categoryPanelOpen && (
+          <>
+            <div className="library-taxonomy-rows">
+              {CATEGORY_LEVEL_LABELS.map(
+                (label, levelIndex) => {
+                  const levelCategories =
+                    categoryLevels[levelIndex];
+
+                  return (
+                    <div
+                      key={label}
+                      className="library-taxonomy-row"
+                    >
+                      <div className="library-taxonomy-label">
+                        {label}
+                      </div>
+
+                      <div className="library-taxonomy-options">
+                        {levelCategories.map(
+                          (category) => {
+                            const active =
+                              activePath[levelIndex]?.id ===
+                              category.id;
+
+                            const functionCount =
+                              countFunctionsInCategory(
+                                category.id,
+                                categories,
+                                functions,
+                              );
+
+                            return (
+                              <button
+                                key={category.id}
+                                type="button"
+                                className={`library-taxonomy-option ${
+                                  active ? 'active' : ''
+                                }`}
+                                aria-pressed={active}
+                                onClick={() =>
+                                  selectCategory(category)
+                                }
+                              >
+                                <span>{category.name}</span>
+                                <small>
+                                  {functionCount}
+                                </small>
+                              </button>
+                            );
+                          },
+                        )}
+                      </div>
+                    </div>
+                  );
+                },
+              )}
+            </div>
+
+            {activeCategory && (
+              <div className="library-function-shelf">
+                <div className="library-function-shelf-heading">
+                  <div>
+                    <span>当前分类</span>
+                    <strong>
+                      {activeCategory.name}
+                    </strong>
+                  </div>
+
+                  <span>
+                    {activeCategoryFunctions.length}
+                    {' '}个知识点
+                  </span>
+                </div>
+
+                {activeCategoryFunctions.length > 0 ? (
+                  <div className="library-function-grid">
+                    {activeCategoryFunctions.map(
+                      (functionEntry) => (
+                        <button
+                          key={functionEntry.id}
+                          type="button"
+                          className={`library-function-card ${
+                            selectedFunctionId ===
+                            functionEntry.id
+                              ? 'active'
+                              : ''
+                          }`}
+                          onClick={() =>
+                            selectFunction(
+                              functionEntry,
+                            )
+                          }
+                        >
+                          <span className="library-function-card-icon">
+                            ƒ
+                          </span>
+
+                          <span className="library-function-card-copy">
+                            <strong>
+                              {functionEntry.name}
+                            </strong>
+                            <small>
+                              {learningStatusLabel(
+                                functionEntry
+                                  .learningStatus,
+                              )}
+                            </small>
+                          </span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                ) : (
+                  <div className="library-function-empty">
+                    这个分类已经建立，但当前筛选下还没有知识点。
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </section>
     </nav>
   );
 }
