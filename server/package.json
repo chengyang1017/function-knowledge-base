@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "dev": "tsx src/normalizeFunctionCategories.ts && tsx watch src/index.ts",
+    "start": "tsx src/normalizeFunctionCategories.ts && tsx src/index.ts",
+    "normalize:function-categories": "tsx src/normalizeFunctionCategories.ts",
     "typecheck": "tsc --noEmit",
     "prisma:generate": "prisma generate",
     "postinstall": "prisma generate"
