@@ -18,7 +18,6 @@ type ImportedFile = {
 
 type ImportStage =
   | 'idle'
-  | 'waiting'
   | 'reading'
   | 'ready'
   | 'saving'
@@ -78,6 +77,26 @@ function NewProjectPage() {
       });
   }, []);
 
+  useEffect(() => {
+    const input = directoryInputRef.current;
+    if (!input) {
+      return;
+    }
+
+    const handleCancel = () => {
+      if (files.length > 0) {
+        setStage('ready');
+        setMessage(`已取消重新选择，仍保留当前 ${files.length} 个 Dart 文件。`);
+      } else {
+        setStage('idle');
+        setMessage('已取消选择目录。');
+      }
+    };
+
+    input.addEventListener('cancel', handleCancel);
+    return () => input.removeEventListener('cancel', handleCancel);
+  }, [files.length]);
+
   const leafCategories = useMemo(() => {
     const parentIds = new Set(
       categories
@@ -106,8 +125,10 @@ function NewProjectPage() {
       return;
     }
 
-    setStage('waiting');
-    setMessage('等待你选择项目目录… 选择完成后会立即显示读取进度。');
+    if (files.length === 0) {
+      setStage('idle');
+      setMessage('');
+    }
 
     window.requestAnimationFrame(() => {
       directoryInputRef.current?.click();
@@ -116,8 +137,13 @@ function NewProjectPage() {
 
   async function chooseDirectory(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) {
-      setStage('idle');
-      setMessage('未选择目录。');
+      if (files.length > 0) {
+        setStage('ready');
+        setMessage(`未选择新目录，仍保留当前 ${files.length} 个 Dart 文件。`);
+      } else {
+        setStage('idle');
+        setMessage('已取消选择目录。');
+      }
       return;
     }
 
@@ -364,7 +390,7 @@ function NewProjectPage() {
             role={stage === 'error' ? 'alert' : 'status'}
             aria-live="polite"
           >
-            {(stage === 'reading' || stage === 'saving' || stage === 'waiting') && (
+            {(stage === 'reading' || stage === 'saving') && (
               <span className="project-import-spinner" aria-hidden="true" />
             )}
             {stage === 'ready' && <span className="project-import-status-icon">✓</span>}
