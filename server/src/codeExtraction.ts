@@ -164,13 +164,24 @@ function findUnitStart(
   lowerBound: number,
 ): number {
   for (let cursor = index - 1; cursor >= lowerBound; cursor -= 1) {
-    if (depths[cursor] !== baseDepth) {
-      continue;
+    const char = maskedCode[cursor];
+    const depth = depths[cursor];
+
+    // A previous block closes one level deeper and returns to baseDepth after
+    // this brace. This is the most important boundary between Class methods.
+    if (char === '}' && depth === baseDepth + 1) {
+      return cursor + 1;
     }
 
-    const char = maskedCode[cursor];
+    // Expression-bodied methods, fields and ordinary statements terminate at
+    // baseDepth with a semicolon, so the next declaration starts after it.
+    if (char === ';' && depth === baseDepth) {
+      return cursor + 1;
+    }
 
-    if (char === ';' || char === '{' || char === '}') {
+    // Useful for top-level scans. For Class scans lowerBound starts just after
+    // the Class opening brace, so the outer Class brace is never selected.
+    if (char === '{' && depth === baseDepth) {
       return cursor + 1;
     }
   }
