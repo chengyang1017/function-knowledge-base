@@ -335,9 +335,7 @@
   box-shadow: var(--theme-shadow-soft) !important;
 }
 
-/* Prism's default dark styles add colored text shadows to tokens. That looks
-   like red/blue ghosting on the Class/File pages, so keep the syntax colors
-   but remove every shadow and use a crisp editor-like monospace rendering. */
+/* Keep Prism crisp: no colored glow/shadow around glyphs. */
 .artifact-detail pre,
 .artifact-detail pre code,
 .artifact-detail pre * {
@@ -357,17 +355,74 @@
   background: transparent !important;
 }
 
-/* Prism's default light theme leaves ordinary identifiers and member access
-   in near-black. On our dark code surface those pieces almost disappear.
-   Give the code/line wrappers a light foreground while preserving the inline
-   colors of actual syntax tokens (keywords, functions, numbers, strings...). */
+/* Dark-mode Prism palette. Plain identifiers inherit the light base color;
+   actual token classes keep distinct editor-like syntax colors. Do not force
+   every span to one color, because that destroys syntax highlighting. */
 html[data-theme='dark'] .artifact-detail pre,
-html[data-theme='dark'] .artifact-detail pre code,
-html[data-theme='dark'] .artifact-detail pre code > span {
-  color: #d8e1ee !important;
+html[data-theme='dark'] .artifact-detail pre code {
+  color: #d4d4d4 !important;
 }
 
-html[data-theme='dark'] .artifact-detail .linenumber {
+html[data-theme='dark'] .artifact-detail .token.comment,
+html[data-theme='dark'] .artifact-detail .token.prolog,
+html[data-theme='dark'] .artifact-detail .token.doctype,
+html[data-theme='dark'] .artifact-detail .token.cdata {
+  color: #6a9955 !important;
+}
+
+html[data-theme='dark'] .artifact-detail .token.keyword,
+html[data-theme='dark'] .artifact-detail .token.atrule,
+html[data-theme='dark'] .artifact-detail .token.control,
+html[data-theme='dark'] .artifact-detail .token.directive {
+  color: #c586c0 !important;
+}
+
+html[data-theme='dark'] .artifact-detail .token.class-name,
+html[data-theme='dark'] .artifact-detail .token.builtin,
+html[data-theme='dark'] .artifact-detail .token.type-definition {
+  color: #4ec9b0 !important;
+}
+
+html[data-theme='dark'] .artifact-detail .token.function,
+html[data-theme='dark'] .artifact-detail .token.method,
+html[data-theme='dark'] .artifact-detail .token.function-variable {
+  color: #dcdcaa !important;
+}
+
+html[data-theme='dark'] .artifact-detail .token.string,
+html[data-theme='dark'] .artifact-detail .token.char,
+html[data-theme='dark'] .artifact-detail .token.attr-value,
+html[data-theme='dark'] .artifact-detail .token.regex {
+  color: #ce9178 !important;
+}
+
+html[data-theme='dark'] .artifact-detail .token.number,
+html[data-theme='dark'] .artifact-detail .token.boolean,
+html[data-theme='dark'] .artifact-detail .token.constant,
+html[data-theme='dark'] .artifact-detail .token.symbol {
+  color: #b5cea8 !important;
+}
+
+html[data-theme='dark'] .artifact-detail .token.property,
+html[data-theme='dark'] .artifact-detail .token.parameter,
+html[data-theme='dark'] .artifact-detail .token.variable,
+html[data-theme='dark'] .artifact-detail .token.attr-name {
+  color: #9cdcfe !important;
+}
+
+html[data-theme='dark'] .artifact-detail .token.operator,
+html[data-theme='dark'] .artifact-detail .token.punctuation {
+  color: #d4d4d4 !important;
+}
+
+html[data-theme='dark'] .artifact-detail .token.annotation,
+html[data-theme='dark'] .artifact-detail .token.decorator,
+html[data-theme='dark'] .artifact-detail .token.tag {
+  color: #d7ba7d !important;
+}
+
+html[data-theme='dark'] .artifact-detail .linenumber,
+html[data-theme='dark'] .artifact-detail .react-syntax-highlighter-line-number {
   color: #7f93aa !important;
 }
 
