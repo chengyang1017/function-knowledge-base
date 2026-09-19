@@ -223,7 +223,6 @@
 .artifact-member-grid > a,
 .artifact-member-grid > button {
   display: flex;
-  width: 100%;
   min-width: 0;
   min-height: 48px;
   align-items: center;
@@ -277,9 +276,9 @@
 }
 
 .artifact-inline-function {
-  margin: 26px 0 34px;
+  margin: 26px 0 32px;
   padding: 20px;
-  border: 1px solid var(--theme-border-strong);
+  border: 1px solid var(--theme-border);
   border-radius: 14px;
   background: var(--theme-surface);
   box-shadow: var(--theme-shadow-soft);
@@ -289,7 +288,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 16px;
   margin-bottom: 14px;
 }
 
@@ -301,15 +300,12 @@
 .artifact-inline-variant-tabs {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
   gap: 8px;
 }
 
 .artifact-inline-function-actions button,
 .artifact-inline-variant-tabs button {
   width: auto;
-  min-height: 36px;
-  padding: 7px 11px;
 }
 
 .artifact-inline-function-actions button.active,
@@ -317,7 +313,6 @@
   border-color: var(--theme-accent) !important;
   background: var(--theme-accent-soft) !important;
   color: var(--theme-accent-strong) !important;
-  font-weight: 750;
 }
 
 .artifact-inline-variant-tabs {
@@ -325,7 +320,6 @@
 }
 
 .artifact-inline-function-explanation {
-  margin-top: 14px;
   color: var(--theme-text-soft);
 }
 
@@ -361,6 +355,20 @@
 
 .artifact-detail pre code span {
   background: transparent !important;
+}
+
+/* Prism's default light theme leaves ordinary identifiers and member access
+   in near-black. On our dark code surface those pieces almost disappear.
+   Give the code/line wrappers a light foreground while preserving the inline
+   colors of actual syntax tokens (keywords, functions, numbers, strings...). */
+html[data-theme='dark'] .artifact-detail pre,
+html[data-theme='dark'] .artifact-detail pre code,
+html[data-theme='dark'] .artifact-detail pre code > span {
+  color: #d8e1ee !important;
+}
+
+html[data-theme='dark'] .artifact-detail .linenumber {
+  color: #7f93aa !important;
 }
 
 .artifact-empty-state {
@@ -399,6 +407,10 @@
     grid-template-columns: 64px minmax(0, 1fr);
     padding-right: 12px;
     padding-left: 12px;
+  }
+
+  .artifact-inline-function {
+    padding: 14px;
   }
 
   .artifact-inline-function-heading {
