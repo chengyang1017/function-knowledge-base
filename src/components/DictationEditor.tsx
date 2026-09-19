@@ -43,17 +43,10 @@ function checkDraft(
     return 'complete';
   }
 
-  // Normal typing at the end: as long as what has been written is
-  // still an exact prefix of the answer, there is nothing to warn about.
   if (target.startsWith(current)) {
     return 'progress';
   }
 
-  // Monaco (and people) often create the closing bracket first and type
-  // inside it afterwards. Treat the cursor as the current "hole": the code
-  // before the cursor must match the beginning of the answer, while the code
-  // after the cursor must match its ending. This makes `{}` valid while the
-  // intended answer is `{123}` and the cursor is between the braces.
   const safeCursorOffset = Math.max(
     0,
     Math.min(cursorOffset, draft.length),
@@ -262,9 +255,7 @@ function DictationEditor({
       className={`dictation-editor-shell ${
         checkState === 'wrong'
           ? 'has-error'
-          : checkState === 'complete'
-            ? 'is-complete'
-            : ''
+          : ''
       }`}
     >
       <Editor
@@ -310,12 +301,6 @@ function DictationEditor({
       {checkState === 'wrong' && (
         <div className="dictation-feedback error">
           与答案不一致
-        </div>
-      )}
-
-      {checkState === 'complete' && (
-        <div className="dictation-feedback complete">
-          ✓ 默写正确
         </div>
       )}
     </div>
