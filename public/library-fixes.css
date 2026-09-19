@@ -49,26 +49,33 @@
   font-weight: 750;
 }
 
-/* When the taxonomy is collapsed, behave like a real sidebar: the left column
-   becomes a narrow rail instead of reserving the full 440px. */
+/* Collapsed mode remains the same composed surface. The taxonomy does not turn
+   into a floating button; it becomes a narrow rail that shares the full height,
+   border and corners with the detail pane. */
 .library-layout:has(.library-top-nav.taxonomy-collapsed) {
-  grid-template-columns: 58px minmax(0, 1fr);
+  grid-template-columns: 76px minmax(0, 1fr);
+  column-gap: 0;
 }
 
 .library-top-nav.taxonomy-collapsed .library-taxonomy-panel {
-  width: 42px;
-  min-width: 42px;
+  position: relative;
+  width: auto;
+  min-width: 0;
   margin-right: 0;
-  margin-left: 8px;
-  border-radius: 12px;
-  box-shadow: none;
+  margin-bottom: 18px;
+  margin-left: 24px;
+  overflow: hidden;
+  border-right: 0;
+  border-radius: 16px 0 0 16px;
+  background: var(--theme-surface) !important;
+  box-shadow: none !important;
 }
 
 .library-top-nav.taxonomy-collapsed .library-taxonomy-header {
-  min-height: 54px;
+  min-height: 58px;
   justify-content: center;
-  padding: 6px;
-  border-bottom: 0;
+  padding: 8px 6px;
+  border-bottom: 1px solid var(--theme-border);
 }
 
 .library-top-nav.taxonomy-collapsed .library-taxonomy-header > div {
@@ -77,55 +84,76 @@
 
 .library-top-nav.taxonomy-collapsed .library-taxonomy-collapse {
   display: inline-flex;
-  width: 30px;
-  min-width: 30px;
+  width: 34px;
+  min-width: 34px;
   height: 40px;
   align-items: center;
   justify-content: center;
   padding: 0;
   overflow: hidden;
-  border: 0;
-  background: transparent;
+  border: 0 !important;
+  border-radius: 9px;
+  background: transparent !important;
   font-size: 0;
 }
 
 .library-top-nav.taxonomy-collapsed .library-taxonomy-collapse::before {
   content: '›';
-  color: #687386;
-  font-size: 24px;
+  color: var(--theme-text-soft);
+  font-size: 25px;
   line-height: 1;
 }
 
 .library-top-nav.taxonomy-collapsed .library-taxonomy-collapse:hover {
-  background: #f3f4f6;
+  background: var(--theme-surface-soft) !important;
 }
 
-/* Expanded and collapsed modes must start the detail at the exact same vertical
-   position. Keep the detail in row 2 beside the narrow collapsed rail. */
+.library-top-nav.taxonomy-collapsed .library-taxonomy-panel::after {
+  position: absolute;
+  top: 82px;
+  left: 50%;
+  color: var(--theme-muted);
+  content: '分类';
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.24em;
+  opacity: 0.72;
+  transform: translateX(-50%);
+  writing-mode: vertical-rl;
+  pointer-events: none;
+}
+
 .library-top-nav.taxonomy-collapsed ~ .function-detail {
   grid-column: 2 !important;
   grid-row: 2 !important;
   width: auto !important;
+  min-width: 0;
   margin-right: 24px;
   margin-bottom: 18px;
   overflow: hidden;
   border: 1px solid var(--theme-border);
-  border-radius: 16px;
+  border-left: 0;
+  border-radius: 0 16px 16px 0;
+  background: var(--theme-surface) !important;
 }
 
 @media (max-width: 720px) {
   .library-layout:has(.library-top-nav.taxonomy-collapsed) {
-    grid-template-columns: 48px minmax(0, 1fr);
+    grid-template-columns: 54px minmax(0, 1fr);
   }
 
   .library-top-nav.taxonomy-collapsed .library-taxonomy-panel {
-    width: 38px;
-    min-width: 38px;
-    margin-left: 5px;
+    margin-left: 12px;
+    border-radius: 13px 0 0 13px;
+  }
+
+  .library-top-nav.taxonomy-collapsed .library-taxonomy-panel::after {
+    display: none;
   }
 
   .library-top-nav.taxonomy-open ~ .function-detail,
   .library-top-nav.taxonomy-collapsed ~ .function-detail {
     margin-right: 12px;
+    border-radius: 0 13px 13px 0;
   }
 }
