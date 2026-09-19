@@ -1,3 +1,93 @@
+.dictation-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dictation-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 38px;
+}
+
+.dictation-toolbar-copy {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 9px;
+}
+
+.dictation-toolbar-copy strong {
+  color: var(--theme-text-soft);
+  font-size: 0.86rem;
+}
+
+.dictation-toolbar-copy span {
+  color: var(--theme-muted);
+  font-size: 0.76rem;
+}
+
+.dictation-hint-button {
+  width: auto;
+  min-height: 34px;
+  padding: 6px 12px;
+  border-color: var(--theme-accent) !important;
+  background: color-mix(
+    in srgb,
+    var(--theme-accent-soft) 72%,
+    var(--theme-surface)
+  ) !important;
+  color: var(--theme-accent-strong) !important;
+  font-weight: 750;
+}
+
+.dictation-hint-panel {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-border);
+  border-radius: 10px;
+  background: var(--theme-surface-soft);
+  box-shadow: var(--theme-shadow-soft);
+}
+
+.dictation-hint-panel.reveal {
+  border-color: color-mix(
+    in srgb,
+    var(--theme-accent) 45%,
+    var(--theme-border)
+  );
+  background: color-mix(
+    in srgb,
+    var(--theme-accent-soft) 48%,
+    var(--theme-surface)
+  );
+}
+
+.dictation-hint-label {
+  flex: 0 0 auto;
+  color: var(--theme-muted);
+  font-size: 0.74rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.dictation-hint-panel code {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--theme-text);
+  font-family:
+    "Cascadia Code", "JetBrains Mono", "SFMono-Regular",
+    Consolas, "Liberation Mono", monospace;
+  font-size: 0.84rem;
+  text-overflow: ellipsis;
+  white-space: pre;
+}
+
 .dictation-editor-shell {
   position: relative;
   overflow: hidden;
@@ -16,10 +106,6 @@
     var(--theme-danger) 18%,
     transparent
   );
-}
-
-.dictation-editor-shell.is-complete {
-  border-color: #3fa66b;
 }
 
 .dictation-feedback {
@@ -49,16 +135,22 @@
   color: var(--theme-danger);
 }
 
-.dictation-feedback.complete {
-  border: 1px solid color-mix(
-    in srgb,
-    #3fa66b 55%,
-    transparent
-  );
-  background: color-mix(
-    in srgb,
-    #3fa66b 14%,
-    var(--theme-surface)
-  );
-  color: #3fa66b;
+@media (max-width: 720px) {
+  .dictation-toolbar-copy {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .dictation-hint-panel {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .dictation-hint-panel code {
+    width: 100%;
+    overflow-x: auto;
+    text-overflow: clip;
+  }
 }
