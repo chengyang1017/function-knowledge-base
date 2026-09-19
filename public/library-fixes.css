@@ -57,6 +57,16 @@
   background: #f3f4f6;
 }
 
+/* Expanded and collapsed modes must start the detail at the exact same vertical
+   position. The base stylesheet used to move the detail to grid row 3 when the
+   taxonomy collapsed, which created the extra empty horizontal band. Keep the
+   detail in row 2 beside the narrow collapsed rail instead. */
+.library-top-nav.taxonomy-collapsed ~ .function-detail {
+  grid-column: 2 !important;
+  grid-row: 2 !important;
+  width: auto !important;
+}
+
 @media (max-width: 720px) {
   .library-layout:has(.library-top-nav.taxonomy-collapsed) {
     grid-template-columns: 48px minmax(0, 1fr);
