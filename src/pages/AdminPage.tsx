@@ -29,7 +29,7 @@ function AdminPage() {
           <h1>管理后台</h1>
 
           <p>
-            管理函数、Class、文件、分类和标签。
+            管理项目、函数、Class、文件、分类和标签。
           </p>
         </div>
 
@@ -50,6 +50,17 @@ function AdminPage() {
       </header>
 
       <section className="admin-menu">
+        <Link
+          to="/admin/projects/new"
+          className="admin-card"
+        >
+          <h2>导入项目</h2>
+
+          <p>
+            选择 Flutter 项目目录，只读取 lib 下的 Dart 文件并建立项目阅读工作区。
+          </p>
+        </Link>
+
         <Link
           to="/admin/functions"
           className="admin-card"
@@ -90,7 +101,7 @@ function AdminPage() {
           <h2>分类管理</h2>
 
           <p>
-            三类知识共用语言、框架、分类、子分类四层树。
+            项目与三类知识共用语言、框架、分类、子分类四层树。
           </p>
         </Link>
 
