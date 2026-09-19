@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
 import {
   Prism as SyntaxHighlighter,
@@ -314,6 +315,22 @@ function FunctionDetail({
         <p className="category-path">
           {categoryPath}
         </p>
+      )}
+
+      {(functionEntry.sourceClass || functionEntry.sourceFile) && (
+        <div className="function-source-links">
+          <span>来源</span>
+          {functionEntry.sourceClass && (
+            <Link to={`/classes?class=${functionEntry.sourceClass.id}`}>
+              Class · {functionEntry.sourceClass.name}
+            </Link>
+          )}
+          {functionEntry.sourceFile && (
+            <Link to={`/files?file=${functionEntry.sourceFile.id}`}>
+              文件 · {functionEntry.sourceFile.name}
+            </Link>
+          )}
+        </div>
       )}
 
       {functionEntry.tags.length > 0 && (
