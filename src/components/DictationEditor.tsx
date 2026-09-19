@@ -82,14 +82,39 @@ const STRUCTURE_KEYWORDS = new Set([
   'yield',
 ]);
 
-const AUTO_CLOSING_CHARS = new Set([
+const STRUCTURAL_CLOSERS = new Set([
   ')',
   ']',
   '}',
-  '"',
-  "'",
-  '`',
 ]);
+
+const MULTI_CHAR_TOKENS = [
+  '===',
+  '!==',
+  '>>>',
+  '<<=',
+  '>>=',
+  '??=',
+  '=>',
+  '==',
+  '!=',
+  '<=',
+  '>=',
+  '++',
+  '--',
+  '&&',
+  '||',
+  '??',
+  '?.',
+  '..',
+  '<<',
+  '>>',
+  '+=',
+  '-=',
+  '*=',
+  '/=',
+  '%=',
+] as const;
 
 function compactCode(value: string): string {
   let compact = '';
@@ -131,21 +156,218 @@ function compactCode(value: string): string {
   return compact;
 }
 
-function containsOnlyAutoClosers(value: string): boolean {
-  const compact = compactCode(value);
+function tokenizeCode(value: string): string[] {
+  const source = compactCode(value);
+  const tokens: string[] = [];
+  let index = 0;
 
+  while (index < source.length) {
+    const char = source[index];
+
+    if (char === '"' || char === "'" || char === '`') {
+      const quote = char;
+      let end = index + 1;
+      let escaped = false;
+
+      while (end < source.length) {
+        const next = source[end];
+
+        if (escaped) {
+          escaped = false;
+          end += 1;
+          continue;
+        }
+
+        if (next === '\\') {
+          escaped = true;
+          end += 1;
+          continue;
+        }
+
+        end += 1;
+
+        if (next === quote) {
+          break;
+        }
+      }
+
+      tokens.push(source.slice(index, end));
+      index = end;
+      continue;
+    }
+
+    if (/[A-Za-z_$]/.test(char)) {
+      let end = index + 1;
+
+      while (
+        end < source.length &&
+        /[A-Za-z0-9_$]/.test(source[end])
+      ) {
+        end += 1;
+      }
+
+      tokens.push(source.slice(index, end));
+      index = end;
+      continue;
+    }
+
+    if (/\d/.test(char)) {
+      let end = index + 1;
+
+      while (
+        end < source.length &&
+        /[A-Za-z0-9_.]/.test(source[end])
+      ) {
+        end += 1;
+      }
+
+      tokens.push(source.slice(index, end));
+      index = end;
+      continue;
+    }
+
+    const multiCharToken = MULTI_CHAR_TOKENS.find(
+      (token) => source.startsWith(token, index),
+    );
+
+    if (multiCharToken) {
+      tokens.push(multiCharToken);
+      index += multiCharToken.length;
+      continue;
+    }
+
+    tokens.push(char);
+    index += 1;
+  }
+
+  return tokens;
+}
+
+function isStringToken(value: string): boolean {
   return (
-    compact.length > 0 &&
-    [...compact].every((char) =>
-      AUTO_CLOSING_CHARS.has(char),
-    )
+    value.startsWith('"') ||
+    value.startsWith("'") ||
+    value.startsWith('`')
   );
+}
+
+function stringTokenCompatible(
+  current: string,
+  target: string,
+): boolean {
+  if (
+    !isStringToken(current) ||
+    !isStringToken(target) ||
+    current[0] !== target[0]
+  ) {
+    return false;
+  }
+
+  const quote = current[0];
+  const currentClosed =
+    current.length > 1 && current.endsWith(quote);
+  const targetClosed =
+    target.length > 1 && target.endsWith(quote);
+
+  if (!targetClosed) {
+    return target.startsWith(current);
+  }
+
+  const currentBody = current.slice(
+    1,
+    currentClosed ? -1 : undefined,
+  );
+  const targetBody = target.slice(1, -1);
+
+  return targetBody.startsWith(currentBody);
+}
+
+function canMatchPartialDraft(
+  currentTokens: string[],
+  targetTokens: string[],
+): boolean {
+  const memo = new Map<string, boolean>();
+
+  function visit(
+    currentIndex: number,
+    targetIndex: number,
+  ): boolean {
+    if (currentIndex >= currentTokens.length) {
+      return true;
+    }
+
+    if (targetIndex >= targetTokens.length) {
+      return false;
+    }
+
+    const key = `${currentIndex}:${targetIndex}`;
+    const cached = memo.get(key);
+
+    if (cached !== undefined) {
+      return cached;
+    }
+
+    const currentToken = currentTokens[currentIndex];
+    const targetToken = targetTokens[targetIndex];
+
+    if (
+      currentToken === targetToken &&
+      visit(currentIndex + 1, targetIndex + 1)
+    ) {
+      memo.set(key, true);
+      return true;
+    }
+
+    if (
+      stringTokenCompatible(currentToken, targetToken) &&
+      visit(currentIndex + 1, targetIndex + 1)
+    ) {
+      memo.set(key, true);
+      return true;
+    }
+
+    const isLastCurrentToken =
+      currentIndex === currentTokens.length - 1;
+
+    if (
+      isLastCurrentToken &&
+      currentToken.length > 0 &&
+      targetToken.startsWith(currentToken)
+    ) {
+      memo.set(key, true);
+      return true;
+    }
+
+    // Auto-inserted closing brackets may legitimately appear before code that
+    // has not been written yet. Allow only closing structure tokens to jump
+    // forward to their matching occurrence in the answer. All real identifiers,
+    // keywords, operators and values still have to match in sequence.
+    if (STRUCTURAL_CLOSERS.has(currentToken)) {
+      for (
+        let candidate = targetIndex + 1;
+        candidate < targetTokens.length;
+        candidate += 1
+      ) {
+        if (
+          targetTokens[candidate] === currentToken &&
+          visit(currentIndex + 1, candidate + 1)
+        ) {
+          memo.set(key, true);
+          return true;
+        }
+      }
+    }
+
+    memo.set(key, false);
+    return false;
+  }
+
+  return visit(0, 0);
 }
 
 function checkDraft(
   draft: string,
   answer: string,
-  cursorOffset: number,
 ): CheckState {
   const target = compactCode(answer);
   const current = compactCode(draft);
@@ -158,51 +380,15 @@ function checkDraft(
     return 'complete';
   }
 
-  if (target.startsWith(current)) {
-    return 'progress';
-  }
+  const currentTokens = tokenizeCode(draft);
+  const targetTokens = tokenizeCode(answer);
 
-  const safeCursorOffset = Math.max(
-    0,
-    Math.min(cursorOffset, draft.length),
-  );
-  const beforeCursor = compactCode(
-    draft.slice(0, safeCursorOffset),
-  );
-  const afterCursor = compactCode(
-    draft.slice(safeCursorOffset),
-  );
-
-  if (!target.startsWith(beforeCursor)) {
-    return 'wrong';
-  }
-
-  // Monaco inserts closing pairs before the user has filled their contents.
-  // For example, typing `getVideos(` immediately creates `getVideos()` and
-  // typing `{` creates `{}`. Those generated closers can also be nested, so a
-  // draft may temporarily look like `getVideos()}` even though the answer has
-  // many lines between `)` and the final `}`. As long as everything already
-  // typed before the cursor is still an exact answer prefix, treat a suffix
-  // made only of auto-closing characters as unfinished structure, not an error.
-  if (
-    afterCursor.length === 0 ||
-    containsOnlyAutoClosers(afterCursor)
-  ) {
-    return 'progress';
-  }
-
-  // When editing in the middle of already-written code, preserve the earlier
-  // hole-based behaviour: the prefix before the cursor and the suffix after
-  // it may surround content that has not been typed yet.
-  if (
-    target.endsWith(afterCursor) &&
-    beforeCursor.length + afterCursor.length <=
-      target.length
-  ) {
-    return 'progress';
-  }
-
-  return 'wrong';
+  return canMatchPartialDraft(
+    currentTokens,
+    targetTokens,
+  )
+    ? 'progress'
+    : 'wrong';
 }
 
 function answerIndexAtCursor(
@@ -361,13 +547,8 @@ function DictationEditor({
   );
 
   const checkState = useMemo(
-    () =>
-      checkDraft(
-        draft,
-        answer,
-        cursorOffset,
-      ),
-    [draft, answer, cursorOffset],
+    () => checkDraft(draft, answer),
+    [draft, answer],
   );
 
   const editorHeight = `${Math.min(
