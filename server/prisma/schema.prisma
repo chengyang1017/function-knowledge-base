@@ -57,12 +57,31 @@ model FunctionVariant {
   updatedAt DateTime @updatedAt
 }
 
+model CodeProject {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  language    String   @default("dart")
+
+  categoryId   Int?
+  categoryNode Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  files CodeFile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model CodeFile {
   id          Int      @id @default(autoincrement())
   name        String
   language    String   @default("plaintext")
   code        String
   description String?
+
+  projectId   Int?
+  project     CodeProject? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  projectPath String?
 
   categoryId   Int?
   categoryNode Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
@@ -72,6 +91,8 @@ model CodeFile {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@unique([projectId, projectPath])
 }
 
 model CodeClass {
@@ -105,6 +126,7 @@ model Category {
   functions FunctionEntry[]
   classes   CodeClass[]
   files     CodeFile[]
+  projects  CodeProject[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
