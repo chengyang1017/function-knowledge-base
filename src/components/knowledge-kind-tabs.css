@@ -1,0 +1,51 @@
+.knowledge-kind-tabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--theme-border);
+  border-radius: 12px;
+  background: var(--theme-surface-soft);
+}
+
+.knowledge-kind-tabs a {
+  min-width: 72px;
+  padding: 8px 14px;
+  border-radius: 9px;
+  color: var(--theme-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.knowledge-kind-tabs a:hover {
+  color: var(--theme-text);
+  text-decoration: none;
+}
+
+.knowledge-kind-tabs a.active {
+  background: var(--theme-surface);
+  color: var(--theme-accent-strong);
+  box-shadow: var(--theme-shadow-soft);
+}
+
+.knowledge-kind-tabs.compact a {
+  min-width: 64px;
+  padding: 7px 11px;
+}
+
+@media (max-width: 720px) {
+  .knowledge-kind-tabs {
+    width: 100%;
+  }
+
+  .knowledge-kind-tabs a {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+}
