@@ -8,12 +8,13 @@ import {
   protectAdminWrites,
 } from './adminAuth.js';
 import codeArtifactRoutes from './codeArtifactRoutes.js';
+import projectRoutes from './projectRoutes.js';
 import { prisma } from './lib/prisma.js';
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '20mb' }));
 
 app.post('/api/admin/login', adminLogin);
 app.get('/api/admin/session', adminSession);
@@ -23,6 +24,7 @@ app.use('/api/functions', protectAdminWrites);
 app.use('/api/categories', protectAdminWrites);
 app.use('/api/tags', protectAdminWrites);
 app.use('/api', codeArtifactRoutes);
+app.use('/api', projectRoutes);
 
 app.get('/api/health', (_request, response) => {
   response.json({
