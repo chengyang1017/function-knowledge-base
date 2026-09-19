@@ -29,7 +29,7 @@ function AdminPage() {
           <h1>管理后台</h1>
 
           <p>
-            管理函数、写法版本、分类和标签。
+            管理函数、Class、文件、分类和标签。
           </p>
         </div>
 
@@ -57,7 +57,29 @@ function AdminPage() {
           <h2>函数管理</h2>
 
           <p>
-            新增、编辑和删除函数知识。
+            新增、编辑和删除独立函数知识。
+          </p>
+        </Link>
+
+        <Link
+          to="/admin/classes/new"
+          className="admin-card"
+        >
+          <h2>新增 Class</h2>
+
+          <p>
+            粘贴完整 Class，自动抽取所有方法进入函数库。
+          </p>
+        </Link>
+
+        <Link
+          to="/admin/files/new"
+          className="admin-card"
+        >
+          <h2>新增文件</h2>
+
+          <p>
+            导入完整文件，自动拆出 Class、方法和顶层函数。
           </p>
         </Link>
 
@@ -68,7 +90,7 @@ function AdminPage() {
           <h2>分类管理</h2>
 
           <p>
-            管理语言、框架和技术分类树。
+            三类知识共用语言、框架、分类、子分类四层树。
           </p>
         </Link>
 
