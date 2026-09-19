@@ -6,6 +6,18 @@ export type ProjectStats = {
   functions: number;
 };
 
+export type ProjectOutlineFunction = {
+  id: number;
+  name: string;
+  sourceClassId?: number | null;
+};
+
+export type ProjectOutlineClass = {
+  id: number;
+  name: string;
+  methods: ProjectOutlineFunction[];
+};
+
 export type ProjectFileSummary = {
   id: number;
   name: string;
@@ -16,6 +28,8 @@ export type ProjectFileSummary = {
     classes: number;
     functions: number;
   };
+  classes?: ProjectOutlineClass[];
+  functions?: ProjectOutlineFunction[];
 };
 
 export type CodeProjectEntry = {
