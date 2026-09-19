@@ -16,8 +16,21 @@ function KnowledgeKindTabs({
           ? 'knowledge-kind-tabs compact'
           : 'knowledge-kind-tabs'
       }
-      aria-label="知识类型"
+      aria-label="代码阅读模式"
     >
+      <NavLink
+        to="/projects"
+        className={({ isActive }) =>
+          isActive
+            ? 'knowledge-workspace-link active'
+            : 'knowledge-workspace-link'
+        }
+      >
+        项目阅读
+      </NavLink>
+
+      <span className="knowledge-kind-divider" aria-hidden="true" />
+
       <NavLink
         to="/"
         end
