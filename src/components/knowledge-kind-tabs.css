@@ -1,3 +1,22 @@
+.artifact-library-header {
+  align-items: center;
+}
+
+.artifact-brand-block {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 28px;
+}
+
+.artifact-brand-block h1 {
+  margin-bottom: 4px;
+}
+
+.artifact-brand-block p {
+  margin-bottom: 0;
+}
+
 .knowledge-kind-tabs {
   display: inline-flex;
   align-items: center;
@@ -37,6 +56,14 @@
 .knowledge-kind-tabs.compact a {
   min-width: 64px;
   padding: 7px 11px;
+}
+
+@media (max-width: 900px) {
+  .artifact-brand-block {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
 }
 
 @media (max-width: 720px) {
