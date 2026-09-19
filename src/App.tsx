@@ -22,6 +22,8 @@ import FunctionLibraryPage from './pages/FunctionLibraryPage';
 import NewClassPage from './pages/NewClassPage';
 import NewFilePage from './pages/NewFilePage';
 import NewFunctionPage from './pages/NewFunctionPage';
+import NewProjectPage from './pages/NewProjectPage';
+import ProjectReaderPage from './pages/ProjectReaderPage';
 import ReviewPage from './pages/ReviewPage';
 import TagAdminPage from './pages/TagAdminPage';
 
@@ -46,6 +48,11 @@ function App() {
         <Route
           path="/"
           element={<FunctionLibraryPage />}
+        />
+
+        <Route
+          path="/projects"
+          element={<ProjectReaderPage />}
         />
 
         <Route
@@ -105,6 +112,13 @@ function App() {
           path="/admin/files/new"
           element={protect(
             <NewFilePage />,
+          )}
+        />
+
+        <Route
+          path="/admin/projects/new"
+          element={protect(
+            <NewProjectPage />,
           )}
         />
 
