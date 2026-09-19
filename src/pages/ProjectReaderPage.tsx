@@ -17,6 +17,7 @@ import type {
   ProjectFunction,
 } from '../types/project';
 import './project-reader.css';
+import './project-reader-actions.css';
 
 type TreeNode = {
   name: string;
@@ -26,6 +27,38 @@ type TreeNode = {
 };
 
 type ReadStatus = 'unread' | 'reading' | 'read';
+
+type ProjectFocus = {
+  kind: 'class' | 'function';
+  id: number;
+};
+
+function parseProjectFocus(value: string | null): ProjectFocus | null {
+  if (!value) {
+    return null;
+  }
+
+  const [kind, rawId] = value.split(':');
+  const id = Number(rawId);
+
+  if (
+    (kind !== 'class' && kind !== 'function') ||
+    !Number.isSafeInteger(id) ||
+    id <= 0
+  ) {
+    return null;
+  }
+
+  return { kind, id };
+}
+
+function serializeProjectFocus(focus: ProjectFocus): string {
+  return `${focus.kind}:${focus.id}`;
+}
+
+function isModifiedClick(event: { ctrlKey: boolean; metaKey: boolean }): boolean {
+  return event.ctrlKey || event.metaKey;
+}
 
 function buildTree(files: ProjectFileSummary[]): TreeNode[] {
   const root: TreeNode = {
@@ -122,6 +155,11 @@ function ProjectReaderPage() {
   );
   const [readStatuses, setReadStatuses] = useState<Record<string, ReadStatus>>({});
   const [recentFileIds, setRecentFileIds] = useState<number[]>([]);
+  const [pendingFocus, setPendingFocus] = useState<ProjectFocus | null>(
+    () => parseProjectFocus(new URLSearchParams(window.location.search).get('focus')),
+  );
+  const [deletingProject, setDeletingProject] = useState(false);
+  const [projectActionMessage, setProjectActionMessage] = useState('');
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
   const decorationRef = useRef<editor.IEditorDecorationsCollection | null>(null);
 
@@ -160,6 +198,7 @@ function ProjectReaderPage() {
       setSelectedFile(null);
       setReadStatuses({});
       setRecentFileIds([]);
+      setPendingFocus(null);
       return;
     }
 
@@ -178,6 +217,11 @@ function ProjectReaderPage() {
 
     setSelectedFileId(file?.id ?? null);
     setSelectedFile(null);
+    setPendingFocus(
+      file && Number.isSafeInteger(requestedFile) && file.id === requestedFile
+        ? parseProjectFocus(params.get('focus'))
+        : null,
+    );
   }, [selectedProjectId, selectedProject]);
 
   useEffect(() => {
@@ -201,6 +245,18 @@ function ProjectReaderPage() {
       .finally(() => setLoadingFile(false));
   }, [selectedProjectId, selectedFileId]);
 
+  useEffect(() => {
+    if (!selectedFile || !pendingFocus || !editorRef.current) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      revealFocus(pendingFocus);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [selectedFile, pendingFocus]);
+
   const tree = useMemo(
     () => buildTree(selectedProject?.files ?? []),
     [selectedProject],
@@ -217,7 +273,7 @@ function ProjectReaderPage() {
       kind: '文件' | 'Class' | '函数';
       label: string;
       file: ProjectFileSummary;
-      functionName?: string;
+      focus?: ProjectFocus;
     }> = [];
 
     for (const file of selectedProject.files) {
@@ -238,6 +294,7 @@ function ProjectReaderPage() {
             kind: 'Class',
             label: codeClass.name,
             file,
+            focus: { kind: 'class', id: codeClass.id },
           });
         }
 
@@ -248,7 +305,7 @@ function ProjectReaderPage() {
               kind: '函数',
               label: method.name,
               file,
-              functionName: method.name,
+              focus: { kind: 'function', id: method.id },
             });
           }
         }
@@ -261,7 +318,7 @@ function ProjectReaderPage() {
             kind: '函数',
             label: fn.name,
             file,
-            functionName: fn.name,
+            focus: { kind: 'function', id: fn.id },
           });
         }
       }
@@ -274,22 +331,59 @@ function ProjectReaderPage() {
     setSelectedProjectId(projectId);
     setSelectedFileId(null);
     setSelectedFile(null);
+    setPendingFocus(null);
     setSearch('');
+    setProjectActionMessage('');
     const url = new URL(window.location.href);
     url.searchParams.set('project', String(projectId));
     url.searchParams.delete('file');
+    url.searchParams.delete('focus');
     window.history.replaceState({}, '', url);
   }
 
-  function selectFile(file: ProjectFileSummary, functionName?: string) {
+  function projectFileUrl(fileId: number, focus?: ProjectFocus): string | null {
+    if (selectedProjectId == null) {
+      return null;
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('project', String(selectedProjectId));
+    url.searchParams.set('file', String(fileId));
+
+    if (focus) {
+      url.searchParams.set('focus', serializeProjectFocus(focus));
+    } else {
+      url.searchParams.delete('focus');
+    }
+
+    return url.toString();
+  }
+
+  function openFileInNewTab(file: ProjectFileSummary, focus?: ProjectFocus) {
+    const url = projectFileUrl(file.id, focus);
+    if (!url) {
+      return;
+    }
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
+  function selectFile(file: ProjectFileSummary, focus?: ProjectFocus) {
     if (selectedProjectId == null) {
       return;
     }
 
     setSelectedFileId(file.id);
+    setPendingFocus(focus ?? null);
+
     const url = new URL(window.location.href);
     url.searchParams.set('project', String(selectedProjectId));
     url.searchParams.set('file', String(file.id));
+    if (focus) {
+      url.searchParams.set('focus', serializeProjectFocus(focus));
+    } else {
+      url.searchParams.delete('focus');
+    }
     window.history.replaceState({}, '', url);
 
     const nextRecent = [
@@ -305,9 +399,81 @@ function ProjectReaderPage() {
     };
     setReadStatuses(nextStatuses);
     localStorage.setItem(readStatusKey(selectedProjectId), JSON.stringify(nextStatuses));
+  }
 
-    if (functionName) {
-      window.setTimeout(() => revealSymbol(functionName), 180);
+  function focusCurrent(focus: ProjectFocus) {
+    if (!selectedFileId) {
+      return;
+    }
+
+    setPendingFocus(focus);
+    const url = new URL(window.location.href);
+    url.searchParams.set('focus', serializeProjectFocus(focus));
+    window.history.replaceState({}, '', url);
+    revealFocus(focus);
+  }
+
+  async function deleteSelectedProject() {
+    if (!selectedProject || deletingProject) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `确定删除项目「${selectedProject.name}」？\n\n` +
+        `会同时删除 ${selectedProject.stats.files} 个文件、` +
+        `${selectedProject.stats.classes} 个 Class 和 ` +
+        `${selectedProject.stats.functions} 个自动抽取函数。\n\n此操作无法撤销。`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingProject(true);
+    setProjectActionMessage('');
+
+    try {
+      const response = await fetch(apiUrl(`/api/projects/${selectedProject.id}`), {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.message || `服务器返回 ${response.status}`);
+      }
+
+      localStorage.removeItem(readStatusKey(selectedProject.id));
+      localStorage.removeItem(recentFileKey(selectedProject.id));
+
+      const remaining = projects.filter((project) => project.id !== selectedProject.id);
+      const nextProject = remaining[0] ?? null;
+
+      decorationRef.current?.clear();
+      setProjects(remaining);
+      setSelectedProjectId(nextProject?.id ?? null);
+      setSelectedFileId(null);
+      setSelectedFile(null);
+      setPendingFocus(null);
+      setSearch('');
+
+      const url = new URL(window.location.href);
+      if (nextProject) {
+        url.searchParams.set('project', String(nextProject.id));
+      } else {
+        url.searchParams.delete('project');
+      }
+      url.searchParams.delete('file');
+      url.searchParams.delete('focus');
+      window.history.replaceState({}, '', url);
+    } catch (error) {
+      console.error(error);
+      setProjectActionMessage(
+        error instanceof Error
+          ? `删除失败：${error.message}`
+          : '删除失败，请稍后重试。',
+      );
+    } finally {
+      setDeletingProject(false);
     }
   }
 
@@ -360,6 +526,31 @@ function ProjectReaderPage() {
     window.setTimeout(() => decorationRef.current?.clear(), 1200);
   }
 
+  function revealFocus(focus: ProjectFocus) {
+    if (!selectedFile) {
+      return;
+    }
+
+    if (focus.kind === 'class') {
+      const codeClass = selectedFile.classes.find((item) => item.id === focus.id);
+      if (codeClass) {
+        revealSymbol(codeClass.name);
+      }
+      return;
+    }
+
+    const directFunction = selectedFile.functions.find((item) => item.id === focus.id);
+    const method =
+      directFunction ??
+      selectedFile.classes
+        .flatMap((codeClass) => codeClass.methods)
+        .find((item) => item.id === focus.id);
+
+    if (method) {
+      revealSymbol(method.name, getFunctionCode(method));
+    }
+  }
+
   function renderTree(nodes: TreeNode[], depth = 0) {
     return nodes.map((node) => {
       const isFolder = node.file == null;
@@ -376,7 +567,8 @@ function ProjectReaderPage() {
                 : 'project-tree-row'
             }
             style={{ paddingLeft: `${10 + depth * 15}px` }}
-            onClick={() => {
+            title={node.file ? 'Ctrl / Cmd + 点击：在新标签页打开' : undefined}
+            onClick={(event) => {
               if (isFolder) {
                 setExpandedPaths((current) => {
                   const next = new Set(current);
@@ -388,6 +580,10 @@ function ProjectReaderPage() {
                   return next;
                 });
               } else if (node.file) {
+                if (isModifiedClick(event)) {
+                  openFileInNewTab(node.file);
+                  return;
+                }
                 selectFile(node.file);
               }
             }}
@@ -428,10 +624,33 @@ function ProjectReaderPage() {
         </div>
 
         <div className="project-reader-header-actions">
+          {selectedProject && (
+            <button
+              type="button"
+              className="project-delete-button"
+              onClick={() => void deleteSelectedProject()}
+              disabled={deletingProject}
+            >
+              {deletingProject ? '正在删除…' : '删除项目'}
+            </button>
+          )}
           <Link to="/admin/projects/new">导入项目</Link>
           <Link to="/admin">🔒 管理后台</Link>
         </div>
       </header>
+
+      {projectActionMessage && (
+        <div className="project-reader-action-message" role="alert">
+          <span>{projectActionMessage}</span>
+          <button
+            type="button"
+            aria-label="关闭错误提示"
+            onClick={() => setProjectActionMessage('')}
+          >
+            ×
+          </button>
+        </div>
+      )}
 
       <div className="project-reader-toolbar">
         <select
@@ -464,8 +683,13 @@ function ProjectReaderPage() {
                   <button
                     key={result.key}
                     type="button"
-                    onClick={() => {
-                      selectFile(result.file, result.functionName);
+                    title="Ctrl / Cmd + 点击：在新标签页打开"
+                    onClick={(event) => {
+                      if (isModifiedClick(event)) {
+                        openFileInNewTab(result.file, result.focus);
+                        return;
+                      }
+                      selectFile(result.file, result.focus);
                       setSearch('');
                     }}
                   >
@@ -527,7 +751,18 @@ function ProjectReaderPage() {
                     <h2>继续阅读</h2>
                     <div>
                       {recentFiles.map((file) => (
-                        <button key={file.id} type="button" onClick={() => selectFile(file)}>
+                        <button
+                          key={file.id}
+                          type="button"
+                          title="Ctrl / Cmd + 点击：在新标签页打开"
+                          onClick={(event) => {
+                            if (isModifiedClick(event)) {
+                              openFileInNewTab(file);
+                              return;
+                            }
+                            selectFile(file);
+                          }}
+                        >
                           <strong>{file.name}</strong>
                           <small>{file.projectPath}</small>
                         </button>
@@ -556,6 +791,9 @@ function ProjectReaderPage() {
                     theme="vs-dark"
                     onMount={(instance) => {
                       editorRef.current = instance;
+                      if (pendingFocus) {
+                        window.setTimeout(() => revealFocus(pendingFocus), 0);
+                      }
                     }}
                     options={{
                       readOnly: true,
@@ -611,45 +849,85 @@ function ProjectReaderPage() {
               <p className="project-outline-empty">选择左边的 Dart 文件查看结构。</p>
             ) : (
               <div className="project-outline-list">
-                {selectedFile.classes.map((codeClass) => (
-                  <div className="project-outline-class" key={codeClass.id}>
-                    <button
-                      type="button"
-                      onClick={() => revealSymbol(codeClass.name)}
-                    >
-                      <span>C</span>
-                      <strong>{codeClass.name}</strong>
-                    </button>
+                {selectedFile.classes.map((codeClass) => {
+                  const focus: ProjectFocus = { kind: 'class', id: codeClass.id };
+                  const summaryFile = selectedProject.files.find(
+                    (file) => file.id === selectedFile.id,
+                  );
 
-                    {codeClass.methods.map((method) => (
+                  return (
+                    <div className="project-outline-class" key={codeClass.id}>
                       <button
-                        key={method.id}
                         type="button"
-                        className="method"
-                        onClick={() =>
-                          revealSymbol(method.name, getFunctionCode(method))
-                        }
+                        title="Ctrl / Cmd + 点击：在新标签页打开"
+                        onClick={(event) => {
+                          if (isModifiedClick(event) && summaryFile) {
+                            openFileInNewTab(summaryFile, focus);
+                            return;
+                          }
+                          focusCurrent(focus);
+                        }}
                       >
-                        <span>ƒ</span>
-                        <span>{method.name}</span>
+                        <span>C</span>
+                        <strong>{codeClass.name}</strong>
                       </button>
-                    ))}
-                  </div>
-                ))}
+
+                      {codeClass.methods.map((method) => {
+                        const methodFocus: ProjectFocus = {
+                          kind: 'function',
+                          id: method.id,
+                        };
+
+                        return (
+                          <button
+                            key={method.id}
+                            type="button"
+                            className="method"
+                            title="Ctrl / Cmd + 点击：在新标签页打开"
+                            onClick={(event) => {
+                              if (isModifiedClick(event) && summaryFile) {
+                                openFileInNewTab(summaryFile, methodFocus);
+                                return;
+                              }
+                              focusCurrent(methodFocus);
+                            }}
+                          >
+                            <span>ƒ</span>
+                            <span>{method.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  );
+                })}
 
                 {selectedFile.functions
                   .filter((fn) => !fn.sourceClassId)
-                  .map((fn) => (
-                    <button
-                      key={fn.id}
-                      type="button"
-                      className="project-outline-function"
-                      onClick={() => revealSymbol(fn.name, getFunctionCode(fn))}
-                    >
-                      <span>ƒ</span>
-                      <strong>{fn.name}</strong>
-                    </button>
-                  ))}
+                  .map((fn) => {
+                    const focus: ProjectFocus = { kind: 'function', id: fn.id };
+                    const summaryFile = selectedProject.files.find(
+                      (file) => file.id === selectedFile.id,
+                    );
+
+                    return (
+                      <button
+                        key={fn.id}
+                        type="button"
+                        className="project-outline-function"
+                        title="Ctrl / Cmd + 点击：在新标签页打开"
+                        onClick={(event) => {
+                          if (isModifiedClick(event) && summaryFile) {
+                            openFileInNewTab(summaryFile, focus);
+                            return;
+                          }
+                          focusCurrent(focus);
+                        }}
+                      >
+                        <span>ƒ</span>
+                        <strong>{fn.name}</strong>
+                      </button>
+                    );
+                  })}
 
                 {selectedFile.classes.length === 0 &&
                   selectedFile.functions.length === 0 && (
