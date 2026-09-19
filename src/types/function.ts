@@ -27,6 +27,11 @@ export type RelatedFunction = {
   name: string;
 };
 
+export type SourceCodeUnit = {
+  id: number;
+  name: string;
+};
+
 export type LearningStatus =
   | 'unlearned'
   | 'learning'
@@ -39,6 +44,12 @@ export type FunctionEntry = {
 
   categoryId?: number | null;
   categoryNode?: Category | null;
+
+  sourceClassId?: number | null;
+  sourceClass?: SourceCodeUnit | null;
+  sourceFileId?: number | null;
+  sourceFile?: SourceCodeUnit | null;
+  extracted?: boolean;
 
   variants: FunctionVariant[];
   tags: Tag[];
