@@ -8,10 +8,12 @@ import {
   Prism as SyntaxHighlighter,
 } from 'react-syntax-highlighter';
 
+import DictationEditor from '../components/DictationEditor';
 import KnowledgeKindTabs from '../components/KnowledgeKindTabs';
 import { apiUrl } from '../lib/api';
 import type { Category } from '../types/function';
 import type {
+  ArtifactFunction,
   CodeClassEntry,
   CodeFileEntry,
 } from '../types/codeArtifact';
@@ -106,6 +108,24 @@ function syntaxLanguage(language: string): string {
   }
 }
 
+function monacoLanguage(
+  variantLanguage: string | undefined,
+  artifactLanguage: string,
+): string {
+  const language =
+    variantLanguage && variantLanguage !== 'plaintext'
+      ? variantLanguage
+      : artifactLanguage;
+
+  if (language.toLowerCase() === 'html') {
+    return 'html';
+  }
+
+  return syntaxLanguage(language) === 'text'
+    ? 'plaintext'
+    : language.toLowerCase();
+}
+
 function isCodeClassEntry(
   item: Artifact,
 ): item is CodeClassEntry {
@@ -122,6 +142,11 @@ function CodeArtifactLibraryPage({
     useState<number | null>(null);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [selectedFunctionId, setSelectedFunctionId] =
+    useState<number | null>(null);
+  const [selectedVariantId, setSelectedVariantId] =
+    useState<number | null>(null);
+  const [dictationMode, setDictationMode] = useState(false);
 
   const endpoint = mode === 'class' ? '/api/classes' : '/api/files';
   const queryKey = mode === 'class' ? 'class' : 'file';
@@ -130,6 +155,9 @@ function CodeArtifactLibraryPage({
     setLoading(true);
     setItems([]);
     setSelectedId(null);
+    setSelectedFunctionId(null);
+    setSelectedVariantId(null);
+    setDictationMode(false);
 
     Promise.all([
       fetch(apiUrl(endpoint)),
@@ -165,6 +193,26 @@ function CodeArtifactLibraryPage({
     selectedId == null
       ? null
       : items.find((item) => item.id === selectedId) ?? null;
+
+  const selectedFunctions: ArtifactFunction[] = selected
+    ? isCodeClassEntry(selected)
+      ? selected.methods
+      : selected.functions
+    : [];
+
+  const selectedFunction =
+    selectedFunctionId == null
+      ? null
+      : selectedFunctions.find(
+          (functionEntry) => functionEntry.id === selectedFunctionId,
+        ) ?? null;
+
+  const selectedVariant =
+    selectedFunction?.variants.find(
+      (variant) => variant.id === selectedVariantId,
+    ) ??
+    selectedFunction?.variants[0] ??
+    null;
 
   const rootCategories = useMemo(
     () => categories.filter((category) => category.parentId === null),
@@ -212,9 +260,19 @@ function CodeArtifactLibraryPage({
   function selectItem(item: Artifact) {
     setSelectedId(item.id);
     setActiveCategoryId(item.categoryId ?? null);
+    setSelectedFunctionId(null);
+    setSelectedVariantId(null);
+    setDictationMode(false);
+
     const url = new URL(window.location.href);
     url.searchParams.set(queryKey, String(item.id));
     window.history.replaceState({}, '', url);
+  }
+
+  function selectFunction(functionEntry: ArtifactFunction) {
+    setSelectedFunctionId(functionEntry.id);
+    setSelectedVariantId(functionEntry.variants[0]?.id ?? null);
+    setDictationMode(false);
   }
 
   return (
@@ -350,13 +408,18 @@ function CodeArtifactLibraryPage({
                   <h2>方法 · {selected.methods.length}</h2>
                   <div className="artifact-member-grid">
                     {selected.methods.map((method) => (
-                      <Link
+                      <button
                         key={method.id}
-                        to={`/?function=${method.id}`}
+                        type="button"
+                        className={
+                          selectedFunctionId === method.id ? 'active' : ''
+                        }
+                        aria-pressed={selectedFunctionId === method.id}
+                        onClick={() => selectFunction(method)}
                       >
                         <span>ƒ</span>
                         <strong>{method.name}</strong>
-                      </Link>
+                      </button>
                     ))}
                   </div>
                 </section>
@@ -381,20 +444,116 @@ function CodeArtifactLibraryPage({
                     <h2>函数 · {selected.functions.length}</h2>
                     <div className="artifact-member-grid">
                       {selected.functions.map((functionEntry) => (
-                        <Link
+                        <button
                           key={functionEntry.id}
-                          to={`/?function=${functionEntry.id}`}
+                          type="button"
+                          className={
+                            selectedFunctionId === functionEntry.id
+                              ? 'active'
+                              : ''
+                          }
+                          aria-pressed={
+                            selectedFunctionId === functionEntry.id
+                          }
+                          onClick={() => selectFunction(functionEntry)}
                         >
                           <span>ƒ</span>
                           <strong>{functionEntry.name}</strong>
                           {functionEntry.sourceClass && (
                             <small>{functionEntry.sourceClass.name}</small>
                           )}
-                        </Link>
+                        </button>
                       ))}
                     </div>
                   </section>
                 </>
+              )}
+
+              {selectedFunction && selectedVariant && (
+                <section className="artifact-inline-function">
+                  <div className="artifact-inline-function-heading">
+                    <div>
+                      <span className="artifact-kind-badge">FUNCTION</span>
+                      <h2>{selectedFunction.name}</h2>
+                    </div>
+
+                    <div className="artifact-inline-function-actions">
+                      <button
+                        type="button"
+                        className={dictationMode ? 'active' : ''}
+                        onClick={() =>
+                          setDictationMode((current) => !current)
+                        }
+                      >
+                        {dictationMode ? '退出默写' : '默写'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedFunctionId(null);
+                          setSelectedVariantId(null);
+                          setDictationMode(false);
+                        }}
+                      >
+                        关闭
+                      </button>
+                    </div>
+                  </div>
+
+                  {selectedFunction.variants.length > 1 && (
+                    <div className="artifact-inline-variant-tabs">
+                      {selectedFunction.variants.map((variant) => (
+                        <button
+                          key={variant.id}
+                          type="button"
+                          className={
+                            selectedVariant.id === variant.id ? 'active' : ''
+                          }
+                          onClick={() => {
+                            setSelectedVariantId(variant.id);
+                            setDictationMode(false);
+                          }}
+                        >
+                          {variant.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {dictationMode ? (
+                    <DictationEditor
+                      key={selectedVariant.id}
+                      answer={selectedVariant.code}
+                      language={monacoLanguage(
+                        selectedVariant.language,
+                        selected.language,
+                      )}
+                    />
+                  ) : (
+                    <>
+                      <SyntaxHighlighter
+                        language={syntaxLanguage(
+                          selectedVariant.language !== 'plaintext'
+                            ? selectedVariant.language
+                            : selected.language,
+                        )}
+                        showLineNumbers
+                        customStyle={{
+                          borderRadius: '12px',
+                          padding: '20px',
+                        }}
+                      >
+                        {selectedVariant.code}
+                      </SyntaxHighlighter>
+
+                      {selectedVariant.explanation && (
+                        <p className="artifact-inline-function-explanation">
+                          {selectedVariant.explanation}
+                        </p>
+                      )}
+                    </>
+                  )}
+                </section>
               )}
 
               <div className="artifact-code-heading">
