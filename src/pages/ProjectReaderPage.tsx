@@ -299,7 +299,7 @@ function ProjectReaderPage() {
     setRecentFileIds(nextRecent);
     localStorage.setItem(recentFileKey(selectedProjectId), JSON.stringify(nextRecent));
 
-    const nextStatuses = {
+    const nextStatuses: Record<string, ReadStatus> = {
       ...readStatuses,
       [String(file.id)]: readStatuses[String(file.id)] === 'read' ? 'read' : 'reading',
     };
