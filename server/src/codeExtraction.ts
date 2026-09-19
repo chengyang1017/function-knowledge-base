@@ -193,9 +193,6 @@ function callableName(header: string): string | null {
     return null;
   }
 
-  // Usually the last call-shaped identifier in a declaration is the method
-  // name. For constructor initializer lists (`Foo() : super()`) use the first
-  // identifier instead so `super` is not mistaken for the constructor.
   const colonIndex = cleaned.indexOf(':');
   const candidates = colonIndex >= 0
     ? matches.filter((match) => (match.index ?? 0) < colonIndex)
@@ -260,7 +257,6 @@ function extractBlockFunctions(
     });
   }
 
-  // Expression-bodied methods/functions (`foo() => value;`).
   const arrowPattern = /=>/g;
   let match: RegExpExecArray | null;
 
@@ -328,8 +324,19 @@ export function extractCodeUnits(code: string): CodeExtractionResult {
   let classMatch: RegExpExecArray | null;
 
   while ((classMatch = classPattern.exec(maskedCode)) !== null) {
+    const fullMatch = classMatch[0];
     const className = classMatch[1];
-    const openOffset = classMatch[0].lastIndexOf('{');
+
+    if (!fullMatch || !className) {
+      continue;
+    }
+
+    const openOffset = fullMatch.lastIndexOf('{');
+
+    if (openOffset < 0) {
+      continue;
+    }
+
     const openIndex = classMatch.index + openOffset;
     const closeIndex = findMatchingBrace(maskedCode, openIndex);
 
@@ -339,12 +346,13 @@ export function extractCodeUnits(code: string): CodeExtractionResult {
 
     const classStart = classMatch.index;
     const classCode = code.slice(classStart, closeIndex + 1).trim();
+    const classDepth = getDepths(maskedCode)[openIndex] ?? 0;
     const methods = extractBlockFunctions(
       code,
       maskedCode,
       openIndex + 1,
       closeIndex,
-      1,
+      classDepth + 1,
     );
 
     classes.push({
