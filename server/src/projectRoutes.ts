@@ -63,23 +63,55 @@ const projectFileInclude = {
   },
 };
 
+const projectFileSummarySelect = {
+  id: true,
+  name: true,
+  projectPath: true,
+  language: true,
+  updatedAt: true,
+  classes: {
+    select: {
+      id: true,
+      name: true,
+      methods: {
+        select: {
+          id: true,
+          name: true,
+          sourceClassId: true,
+        },
+        orderBy: {
+          createdAt: 'asc' as const,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'asc' as const,
+    },
+  },
+  functions: {
+    select: {
+      id: true,
+      name: true,
+      sourceClassId: true,
+    },
+    orderBy: {
+      createdAt: 'asc' as const,
+    },
+  },
+  _count: {
+    select: {
+      classes: true,
+      functions: true,
+    },
+  },
+};
+
 router.get('/projects', async (_request, response) => {
   const projects = await prisma.codeProject.findMany({
     include: {
       categoryNode: true,
       files: {
-        select: {
-          id: true,
-          name: true,
-          projectPath: true,
-          language: true,
-          _count: {
-            select: {
-              classes: true,
-              functions: true,
-            },
-          },
-        },
+        select: projectFileSummarySelect,
         orderBy: {
           projectPath: 'asc',
         },
@@ -120,19 +152,7 @@ router.get('/projects/:id', async (request, response) => {
     include: {
       categoryNode: true,
       files: {
-        select: {
-          id: true,
-          name: true,
-          projectPath: true,
-          language: true,
-          updatedAt: true,
-          _count: {
-            select: {
-              classes: true,
-              functions: true,
-            },
-          },
-        },
+        select: projectFileSummarySelect,
         orderBy: {
           projectPath: 'asc',
         },
@@ -361,18 +381,7 @@ router.post(
             include: {
               categoryNode: true,
               files: {
-                select: {
-                  id: true,
-                  name: true,
-                  projectPath: true,
-                  language: true,
-                  _count: {
-                    select: {
-                      classes: true,
-                      functions: true,
-                    },
-                  },
-                },
+                select: projectFileSummarySelect,
                 orderBy: { projectPath: 'asc' },
               },
             },
