@@ -1,0 +1,107 @@
+.admin-project-manager {
+  width: min(1120px, calc(100% - 48px));
+  margin: 28px auto 72px;
+  padding: 22px;
+  border: 1px solid var(--theme-border);
+  border-radius: 16px;
+  background: var(--theme-surface);
+  box-shadow: var(--theme-shadow-soft);
+}
+
+.admin-project-manager-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.admin-project-manager-heading h2,
+.admin-project-manager-heading p {
+  margin: 0;
+}
+
+.admin-project-manager-heading p {
+  margin-top: 5px;
+  color: var(--theme-muted);
+}
+
+.admin-project-manager-heading > a {
+  flex: 0 0 auto;
+}
+
+.admin-project-list {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-project-row {
+  display: flex;
+  min-height: 72px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 13px 15px;
+  border: 1px solid var(--theme-border);
+  border-radius: 12px;
+  background: var(--theme-bg-elevated);
+}
+
+.admin-project-row > div:first-child {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.admin-project-row > div:first-child strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-project-row > div:first-child span,
+.admin-project-empty {
+  color: var(--theme-muted);
+}
+
+.admin-project-row-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-project-row-actions > a,
+.admin-project-row-actions > button {
+  width: auto;
+  min-height: 38px;
+}
+
+.admin-project-delete {
+  border-color: color-mix(in srgb, var(--theme-danger) 62%, var(--theme-border)) !important;
+  background: color-mix(in srgb, var(--theme-danger) 10%, var(--theme-surface-soft)) !important;
+  color: var(--theme-danger) !important;
+}
+
+.admin-project-message {
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--theme-border);
+  border-radius: 10px;
+  background: var(--theme-bg-elevated);
+  color: var(--theme-text-soft);
+}
+
+@media (max-width: 720px) {
+  .admin-project-manager {
+    width: calc(100% - 24px);
+    padding: 16px;
+  }
+
+  .admin-project-manager-heading,
+  .admin-project-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
