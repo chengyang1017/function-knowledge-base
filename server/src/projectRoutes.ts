@@ -411,30 +411,65 @@ router.delete(
       return response.status(400).json({ message: 'Invalid project id' });
     }
 
+    const existingProject = await prisma.codeProject.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+
+    if (!existingProject) {
+      return response.status(404).json({ message: '项目不存在或已经被删除' });
+    }
+
     try {
-      await prisma.$transaction(async (tx) => {
-        const projectFiles = await tx.codeFile.findMany({
-          where: { projectId: id },
-          select: { id: true },
-        });
-        const fileIds = projectFiles.map((file) => file.id);
-
-        if (fileIds.length > 0) {
-          await tx.functionEntry.deleteMany({
-            where: {
-              sourceFileId: { in: fileIds },
-              extracted: true,
-            },
+      await prisma.$transaction(
+        async (tx) => {
+          const projectFiles = await tx.codeFile.findMany({
+            where: { projectId: id },
+            select: { id: true },
           });
-        }
+          const fileIds = projectFiles.map((file) => file.id);
 
-        await tx.codeProject.delete({ where: { id } });
-      });
+          if (fileIds.length > 0) {
+            const projectClasses = await tx.codeClass.findMany({
+              where: { sourceFileId: { in: fileIds } },
+              select: { id: true },
+            });
+            const classIds = projectClasses.map((codeClass) => codeClass.id);
+
+            await tx.functionEntry.deleteMany({
+              where: {
+                OR: [
+                  { sourceFileId: { in: fileIds } },
+                  ...(classIds.length > 0
+                    ? [{ sourceClassId: { in: classIds } }]
+                    : []),
+                ],
+              },
+            });
+
+            await tx.codeClass.deleteMany({
+              where: { sourceFileId: { in: fileIds } },
+            });
+
+            await tx.codeFile.deleteMany({
+              where: { projectId: id },
+            });
+          }
+
+          await tx.codeProject.delete({ where: { id } });
+        },
+        {
+          maxWait: 10000,
+          timeout: 120000,
+        },
+      );
 
       response.status(204).send();
     } catch (error) {
-      console.error(error);
-      response.status(500).json({ message: '删除项目失败' });
+      console.error('Delete project failed', { projectId: id, error });
+      response.status(500).json({
+        message: '删除项目失败：项目数据没有完整清理，请重试',
+      });
     }
   },
 );
