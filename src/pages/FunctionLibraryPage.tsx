@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 
 import LibraryTopNav from '../components/LibraryTopNav';
 import FunctionDetail from '../components/FunctionDetail';
+import KnowledgeKindTabs from '../components/KnowledgeKindTabs';
 
 import type {
   Category,
@@ -511,6 +512,14 @@ function FunctionLibraryPage() {
               keyword,
             ) ||
 
+          functionEntry.sourceClass?.name
+            .toLowerCase()
+            .includes(keyword) ||
+
+          functionEntry.sourceFile?.name
+            .toLowerCase()
+            .includes(keyword) ||
+
           functionEntry.tags.some(
             (tag) =>
               tag.name
@@ -783,15 +792,19 @@ function FunctionLibraryPage() {
 
   return (
     <div className="library-page">
-      <header className="library-header">
-        <div>
-          <h1>
-            Function Base
-          </h1>
+      <header className="library-header artifact-library-header">
+        <div className="artifact-brand-block">
+          <div>
+            <h1>
+              Function Base
+            </h1>
 
-          <p>
-            函数知识库
-          </p>
+            <p>
+              代码结构知识库
+            </p>
+          </div>
+
+          <KnowledgeKindTabs />
         </div>
 
         <div className="library-header-actions">
