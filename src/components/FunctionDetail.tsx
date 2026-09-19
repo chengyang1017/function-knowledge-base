@@ -4,6 +4,7 @@ import {
   Prism as SyntaxHighlighter,
 } from 'react-syntax-highlighter';
 
+import DictationEditor from './DictationEditor';
 import type {
   Category,
   FunctionEntry,
@@ -13,28 +14,15 @@ import type {
 type FunctionDetailProps = {
   functionEntry: FunctionEntry | null;
   categories: Category[];
-
   selectedTagId: number | null;
-
   tagCounts: Map<number, number>;
-
-  onTagSelect: (
-    tagId: number,
-  ) => void;
-
-  onRelatedFunctionSelect: (
-    functionId: number,
-  ) => void;
-
+  onTagSelect: (tagId: number) => void;
+  onRelatedFunctionSelect: (functionId: number) => void;
   onLearningStatusChange: (
     functionEntry: FunctionEntry,
     learningStatus: LearningStatus,
   ) => Promise<void>;
-
-  onToggleFavorite: (
-    functionEntry: FunctionEntry,
-  ) => void;
-
+  onToggleFavorite: (functionEntry: FunctionEntry) => void;
   onSaveNote: (
     functionEntry: FunctionEntry,
     note: string,
@@ -42,36 +30,25 @@ type FunctionDetailProps = {
 };
 
 function getRootCategory(
-  categoryId:
-    | number
-    | null
-    | undefined,
+  categoryId: number | null | undefined,
   categories: Category[],
 ): Category | null {
   if (categoryId == null) {
     return null;
   }
 
-  let current =
-    categories.find(
-      (category) =>
-        category.id ===
-        categoryId,
-    );
+  let current = categories.find(
+    (category) => category.id === categoryId,
+  );
 
   if (!current) {
     return null;
   }
 
-  while (
-    current.parentId !== null
-  ) {
-    const parent =
-      categories.find(
-        (category) =>
-          category.id ===
-          current?.parentId,
-      );
+  while (current.parentId !== null) {
+    const parent = categories.find(
+      (category) => category.id === current?.parentId,
+    );
 
     if (!parent) {
       break;
@@ -84,103 +61,93 @@ function getRootCategory(
 }
 
 function getCategoryPath(
-  categoryId:
-    | number
-    | null
-    | undefined,
+  categoryId: number | null | undefined,
   categories: Category[],
 ): string | null {
   if (categoryId == null) {
     return null;
   }
 
-  const category =
-    categories.find(
-      (item) =>
-        item.id === categoryId,
-    );
+  const category = categories.find(
+    (item) => item.id === categoryId,
+  );
 
   if (!category) {
     return null;
   }
 
-  const names = [
-    category.name,
-  ];
+  const names = [category.name];
+  let parentId = category.parentId;
 
-  let parentId =
-    category.parentId;
-
-  while (
-    parentId !== null
-  ) {
-    const parent =
-      categories.find(
-        (item) =>
-          item.id === parentId,
-      );
+  while (parentId !== null) {
+    const parent = categories.find(
+      (item) => item.id === parentId,
+    );
 
     if (!parent) {
       break;
     }
 
-    names.unshift(
-      parent.name,
-    );
-
-    parentId =
-      parent.parentId;
+    names.unshift(parent.name);
+    parentId = parent.parentId;
   }
 
-  return names.join(
-    ' → ',
-  );
+  return names.join(' → ');
 }
 
 function getSyntaxLanguage(
-  functionEntry:
-    FunctionEntry,
+  functionEntry: FunctionEntry,
   categories: Category[],
 ): string {
-  const rootCategory =
-    getRootCategory(
-      functionEntry.categoryId,
-      categories,
-    );
+  const rootCategory = getRootCategory(
+    functionEntry.categoryId,
+    categories,
+  );
 
-  switch (
-    rootCategory?.name.toLowerCase()
-  ) {
+  switch (rootCategory?.name.toLowerCase()) {
     case 'dart':
       return 'dart';
-
     case 'typescript':
       return 'typescript';
-
     case 'javascript':
       return 'javascript';
-
     case 'kotlin':
       return 'kotlin';
-
     case 'java':
       return 'java';
-
     case 'python':
       return 'python';
-
     case 'html':
       return 'markup';
-
     case 'css':
       return 'css';
-
     case 'sql':
       return 'sql';
-
     default:
       return 'text';
   }
+}
+
+function getMonacoLanguage(
+  variantLanguage: string | undefined,
+  syntaxLanguage: string,
+): string {
+  if (
+    variantLanguage &&
+    variantLanguage !== 'plaintext'
+  ) {
+    return variantLanguage;
+  }
+
+  if (syntaxLanguage === 'markup') {
+    return 'html';
+  }
+
+  if (syntaxLanguage === 'text') {
+    return 'plaintext';
+  }
+
+  return syntaxLanguage;
 }
 
 function FunctionDetail({
@@ -194,82 +161,53 @@ function FunctionDetail({
   onToggleFavorite,
   onSaveNote,
 }: FunctionDetailProps) {
-  const [
-    selectedVariantId,
-    setSelectedVariantId,
-  ] =
-    useState<number | null>(
-      null,
-    );
-
-  const [copied, setCopied] =
-    useState(false);
-
-  const [
-    linkCopied,
-    setLinkCopied,
-  ] = useState(false);
-
-  const [noteDraft, setNoteDraft] =
-    useState(
-      functionEntry?.note ?? '',
-    );
-
-  const [savingNote, setSavingNote] =
-    useState(false);
-
-  const [noteMessage, setNoteMessage] =
-    useState('');
+  const [selectedVariantId, setSelectedVariantId] =
+    useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const [dictationMode, setDictationMode] = useState(false);
+  const [noteDraft, setNoteDraft] = useState(
+    functionEntry?.note ?? '',
+  );
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteMessage, setNoteMessage] = useState('');
 
   useEffect(() => {
     setSelectedVariantId(null);
+    setDictationMode(false);
     setNoteDraft(functionEntry?.note ?? '');
     setNoteMessage('');
     setCopied(false);
     setLinkCopied(false);
-  }, [
-    functionEntry?.id,
-    functionEntry?.note,
-  ]);
+  }, [functionEntry?.id, functionEntry?.note]);
 
   const selectedVariant =
     functionEntry?.variants.find(
-      (variant) =>
-        variant.id ===
-        selectedVariantId,
+      (variant) => variant.id === selectedVariantId,
     ) ??
-    functionEntry
-      ?.variants[0] ??
+    functionEntry?.variants[0] ??
     null;
+
   async function copyFunctionLink() {
     await navigator.clipboard.writeText(
       window.location.href,
     );
 
     setLinkCopied(true);
-
-    setTimeout(() => {
-      setLinkCopied(false);
-    }, 1500);
+    setTimeout(() => setLinkCopied(false), 1500);
   }
-
-
 
   async function copyCode() {
     if (!selectedVariant) {
       return;
     }
 
-    await navigator.clipboard
-      .writeText(
-        selectedVariant.code,
-      );
+    await navigator.clipboard.writeText(
+      selectedVariant.code,
+    );
 
     setCopied(true);
-
-    setTimeout(() => {
-      setCopied(false);
-    }, 1500);
+    setTimeout(() => setCopied(false), 1500);
   }
 
   async function saveNote() {
@@ -280,21 +218,11 @@ function FunctionDetail({
     try {
       setSavingNote(true);
       setNoteMessage('');
-
-      await onSaveNote(
-        functionEntry,
-        noteDraft,
-      );
-
-      setNoteMessage(
-        '笔记已保存',
-      );
+      await onSaveNote(functionEntry, noteDraft);
+      setNoteMessage('笔记已保存');
     } catch (error) {
       console.error(error);
-
-      setNoteMessage(
-        '笔记保存失败',
-      );
+      setNoteMessage('笔记保存失败');
     } finally {
       setSavingNote(false);
     }
@@ -308,24 +236,23 @@ function FunctionDetail({
     );
   }
 
-  const syntaxLanguage =
-    getSyntaxLanguage(
-      functionEntry,
-      categories,
-    );
-
-  const categoryPath =
-    getCategoryPath(
-      functionEntry.categoryId,
-      categories,
-    );
+  const syntaxLanguage = getSyntaxLanguage(
+    functionEntry,
+    categories,
+  );
+  const categoryPath = getCategoryPath(
+    functionEntry.categoryId,
+    categories,
+  );
+  const monacoLanguage = getMonacoLanguage(
+    selectedVariant?.language,
+    syntaxLanguage,
+  );
 
   return (
     <section className="function-detail">
       <div className="function-title-row">
-        <h1>
-          {functionEntry.name}
-        </h1>
+        <h1>{functionEntry.name}</h1>
 
         <div className="function-title-actions">
           <button
@@ -333,23 +260,15 @@ function FunctionDetail({
             className="favorite-button"
             onClick={copyFunctionLink}
           >
-            {linkCopied
-              ? '✓ 链接已复制'
-              : '复制链接'}
+            {linkCopied ? '✓ 链接已复制' : '复制链接'}
           </button>
 
           <button
             type="button"
             className="favorite-button"
-            onClick={() =>
-              onToggleFavorite(
-                functionEntry,
-              )
-            }
+            onClick={() => onToggleFavorite(functionEntry)}
           >
-            {functionEntry.favorite
-              ? '★ 已收藏'
-              : '☆ 收藏'}
+            {functionEntry.favorite ? '★ 已收藏' : '☆ 收藏'}
           </button>
         </div>
       </div>
@@ -362,40 +281,33 @@ function FunctionDetail({
             ['unlearned', '未学习'],
             ['learning', '学习中'],
             ['mastered', '已掌握'],
-          ] as const).map(
-            ([status, label]) => (
-              <button
-                key={status}
-                type="button"
-                className={
-                  functionEntry.learningStatus === status
-                    ? 'learning-status-option active'
-                    : 'learning-status-option'
-                }
-                aria-pressed={
-                  functionEntry.learningStatus === status
-                }
-                onClick={() =>
-                  void onLearningStatusChange(
-                    functionEntry,
-                    status,
-                  )
-                }
-              >
-                {label}
-              </button>
-            ),
-          )}
+          ] as const).map(([status, label]) => (
+            <button
+              key={status}
+              type="button"
+              className={
+                functionEntry.learningStatus === status
+                  ? 'learning-status-option active'
+                  : 'learning-status-option'
+              }
+              aria-pressed={
+                functionEntry.learningStatus === status
+              }
+              onClick={() =>
+                void onLearningStatusChange(
+                  functionEntry,
+                  status,
+                )
+              }
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </section>
 
       {functionEntry.description && (
-        <p>
-          {
-            functionEntry
-              .description
-          }
-        </p>
+        <p>{functionEntry.description}</p>
       )}
 
       {categoryPath && (
@@ -404,178 +316,149 @@ function FunctionDetail({
         </p>
       )}
 
-      {functionEntry.tags.length >
-        0 && (
+      {functionEntry.tags.length > 0 && (
         <div className="function-tags">
-          {functionEntry.tags.map(
-            (tag) => (
-              <button
-                key={tag.id}
-                type="button"
-                className={
-                  selectedTagId ===
-                  tag.id
-                    ? 'function-tag active'
-                    : 'function-tag'
-                }
-                onClick={() =>
-                  onTagSelect(
-                    tag.id,
-                  )
-                }
-              >
-                <span>
-                  {tag.name}
-                </span>
-
-                <span className="tag-count">
-                  {tagCounts.get(
-                    tag.id,
-                  ) ?? 0}
-                </span>
-              </button>
-            ),
-          )}
+          {functionEntry.tags.map((tag) => (
+            <button
+              key={tag.id}
+              type="button"
+              className={
+                selectedTagId === tag.id
+                  ? 'function-tag active'
+                  : 'function-tag'
+              }
+              onClick={() => onTagSelect(tag.id)}
+            >
+              <span>{tag.name}</span>
+              <span className="tag-count">
+                {tagCounts.get(tag.id) ?? 0}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 
-      {functionEntry.variants.length >
-        1 && (
+      {functionEntry.variants.length > 1 && (
         <div className="variant-tabs">
-          {functionEntry.variants.map(
-            (variant) => (
-              <button
-                key={
-                  variant.id
-                }
-                type="button"
-                className={
-                  selectedVariant?.id ===
-                  variant.id
-                    ? 'active'
-                    : ''
-                }
-                onClick={() =>
-                  setSelectedVariantId(
-                    variant.id,
-                  )
-                }
-              >
-                {
-                  variant.name
-                }
-              </button>
-            ),
-          )}
+          {functionEntry.variants.map((variant) => (
+            <button
+              key={variant.id}
+              type="button"
+              className={
+                selectedVariant?.id === variant.id
+                  ? 'active'
+                  : ''
+              }
+              onClick={() => {
+                setSelectedVariantId(variant.id);
+                setDictationMode(false);
+              }}
+            >
+              {variant.name}
+            </button>
+          ))}
         </div>
       )}
 
       {selectedVariant && (
         <>
           <div className="variant-header">
-            <h2>
-              {
-                selectedVariant
-                  .name
-              }
-            </h2>
+            <h2>{selectedVariant.name}</h2>
 
-            <button
-              type="button"
-              onClick={
-                copyCode
-              }
-            >
-              {copied
-                ? '✓ 已复制'
-                : '复制'}
-            </button>
-          </div>
-
-          <SyntaxHighlighter
-            language={
-              syntaxLanguage
-            }
-            showLineNumbers
-            customStyle={{
-              borderRadius:
-                '10px',
-              padding:
-                '20px',
-            }}
-          >
-            {
-              selectedVariant
-                .code
-            }
-          </SyntaxHighlighter>
-
-          {selectedVariant.explanation && (
-            <p>
-              {
-                selectedVariant
-                  .explanation
-              }
-            </p>
-          )}
-
-          {selectedVariant.sourceName && (
-            <p>
-              来源：
-
-              {selectedVariant.sourceUrl ? (
-                <a
-                  href={
-                    selectedVariant
-                      .sourceUrl
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {
-                    selectedVariant
-                      .sourceName
-                  }
-                </a>
-              ) : (
-                selectedVariant
-                  .sourceName
-              )}
-            </p>
-          )}
-
-          <section className="function-note">
-            <h2>我的笔记</h2>
-
-            <textarea
-              rows={8}
-              value={noteDraft}
-              onChange={(event) =>
-                setNoteDraft(
-                  event.target.value,
-                )
-              }
-              placeholder="记录你对这个函数的理解、注意事项和复用经验..."
-            />
-
-            <div className="function-note-actions">
+            <div className="variant-header-actions">
               <button
                 type="button"
-                onClick={saveNote}
-                disabled={savingNote}
+                className={
+                  dictationMode
+                    ? 'dictation-toggle active'
+                    : 'dictation-toggle'
+                }
+                onClick={() =>
+                  setDictationMode(
+                    (current) => !current,
+                  )
+                }
               >
-                {savingNote
-                  ? '保存中...'
-                  : '保存笔记'}
+                {dictationMode ? '退出默写' : '默写'}
               </button>
 
-              {noteMessage && (
-                <span>
-                  {noteMessage}
-                </span>
+              {!dictationMode && (
+                <button
+                  type="button"
+                  onClick={copyCode}
+                >
+                  {copied ? '✓ 已复制' : '复制'}
+                </button>
               )}
             </div>
-          </section>
+          </div>
+
+          {dictationMode ? (
+            <DictationEditor
+              key={selectedVariant.id}
+              answer={selectedVariant.code}
+              language={monacoLanguage}
+            />
+          ) : (
+            <>
+              <SyntaxHighlighter
+                language={syntaxLanguage}
+                showLineNumbers
+                customStyle={{
+                  borderRadius: '10px',
+                  padding: '20px',
+                }}
+              >
+                {selectedVariant.code}
+              </SyntaxHighlighter>
+
+              {selectedVariant.explanation && (
+                <p>{selectedVariant.explanation}</p>
+              )}
+
+              {selectedVariant.sourceName && (
+                <p>
+                  来源：
+                  {selectedVariant.sourceUrl ? (
+                    <a
+                      href={selectedVariant.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {selectedVariant.sourceName}
+                    </a>
+                  ) : (
+                    selectedVariant.sourceName
+                  )}
+                </p>
+              )}
+
+              <section className="function-note">
+                <h2>我的笔记</h2>
+
+                <textarea
+                  rows={8}
+                  value={noteDraft}
+                  onChange={(event) =>
+                    setNoteDraft(event.target.value)
+                  }
+                  placeholder="记录你对这个函数的理解、注意事项和复用经验..."
+                />
+
+                <div className="function-note-actions">
+                  <button
+                    type="button"
+                    onClick={saveNote}
+                    disabled={savingNote}
+                  >
+                    {savingNote ? '保存中...' : '保存笔记'}
+                  </button>
+
+                  {noteMessage && <span>{noteMessage}</span>}
+                </div>
+              </section>
+            </>
+          )}
         </>
       )}
 
