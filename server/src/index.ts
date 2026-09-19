@@ -7,6 +7,7 @@ import {
   adminSession,
   protectAdminWrites,
 } from './adminAuth.js';
+import codeArtifactRoutes from './codeArtifactRoutes.js';
 import { prisma } from './lib/prisma.js';
 
 const app = express();
@@ -21,6 +22,7 @@ app.post('/api/admin/logout', adminLogout);
 app.use('/api/functions', protectAdminWrites);
 app.use('/api/categories', protectAdminWrites);
 app.use('/api/tags', protectAdminWrites);
+app.use('/api', codeArtifactRoutes);
 
 app.get('/api/health', (_request, response) => {
   response.json({
@@ -60,15 +62,29 @@ async function isLeafFunctionCategory(
   return category !== null;
 }
 
+const functionInclude = {
+  variants: true,
+  categoryNode: true,
+  tags: true,
+  relatedFunctions: true,
+  sourceClass: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+  sourceFile: {
+    select: {
+      id: true,
+      name: true,
+    },
+  },
+};
+
 app.get('/api/functions', async (_request, response) => {
   const functions =
     await prisma.functionEntry.findMany({
-      include: {
-        variants: true,
-        categoryNode: true,
-        tags: true,
-        relatedFunctions: true,
-      },
+      include: functionInclude,
 
       orderBy: {
         createdAt: 'desc',
@@ -93,12 +109,7 @@ app.get('/api/functions/:id', async (request, response) => {
         id,
       },
 
-      include: {
-        variants: true,
-        categoryNode: true,
-        tags: true,
-        relatedFunctions: true,
-      },
+      include: functionInclude,
     });
 
   if (!functionEntry) {
@@ -193,12 +204,7 @@ app.post('/api/functions', async (request, response) => {
           },
         },
 
-        include: {
-        variants: true,
-        categoryNode: true,
-        tags: true,
-        relatedFunctions: true,
-      },
+        include: functionInclude,
       });
 
     response
@@ -323,12 +329,7 @@ app.put('/api/functions/:id', async (request, response) => {
                 : {}),
             },
 
-            include: {
-        variants: true,
-        categoryNode: true,
-        tags: true,
-        relatedFunctions: true,
-      },
+            include: functionInclude,
           });
         },
       );
@@ -375,12 +376,7 @@ app.patch(
             favorite,
           },
 
-          include: {
-        variants: true,
-        categoryNode: true,
-        tags: true,
-        relatedFunctions: true,
-      },
+          include: functionInclude,
         });
 
       response.json(functionEntry);
@@ -434,12 +430,7 @@ app.patch(
             learningStatus,
           },
 
-          include: {
-            variants: true,
-            categoryNode: true,
-            tags: true,
-            relatedFunctions: true,
-          },
+          include: functionInclude,
         });
 
       response.json(functionEntry);
@@ -491,12 +482,7 @@ app.patch(
                 : null,
           },
 
-          include: {
-        variants: true,
-        categoryNode: true,
-        tags: true,
-        relatedFunctions: true,
-      },
+          include: functionInclude,
         });
 
       response.json(functionEntry);
@@ -766,6 +752,8 @@ app.delete('/api/categories/:id', async (request, response) => {
       include: {
         children: true,
         functions: true,
+        classes: true,
+        files: true,
       },
     });
 
@@ -785,11 +773,13 @@ app.delete('/api/categories/:id', async (request, response) => {
   }
 
   if (
-    category.functions.length > 0
+    category.functions.length > 0 ||
+    category.classes.length > 0 ||
+    category.files.length > 0
   ) {
     return response.status(409).json({
       message:
-        '该分类下面还有函数，不能删除',
+        '该分类下面仍有函数、Class 或文件，不能删除',
     });
   }
 
