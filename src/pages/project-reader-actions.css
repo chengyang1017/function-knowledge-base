@@ -1,0 +1,66 @@
+.project-reader-header-actions .project-delete-button {
+  display: inline-flex;
+  width: auto;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--theme-danger) 58%, var(--theme-border)) !important;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--theme-danger) 10%, var(--theme-surface-soft)) !important;
+  color: var(--theme-danger) !important;
+  font-weight: 800;
+}
+
+.project-reader-header-actions .project-delete-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--theme-danger) 16%, var(--theme-surface-soft)) !important;
+}
+
+.project-reader-header-actions .project-delete-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.project-reader-action-message {
+  position: fixed;
+  top: 116px;
+  right: 22px;
+  z-index: 80;
+  display: flex;
+  max-width: min(440px, calc(100vw - 32px));
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--theme-danger) 64%, var(--theme-border));
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--theme-danger) 9%, var(--theme-surface));
+  color: var(--theme-danger);
+  box-shadow: var(--theme-shadow);
+}
+
+.project-reader-action-message > span {
+  flex: 1 1 auto;
+  line-height: 1.45;
+}
+
+.project-reader-action-message > button {
+  width: 28px;
+  min-width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+@media (max-width: 720px) {
+  .project-reader-action-message {
+    top: 94px;
+    right: 12px;
+    left: 12px;
+    max-width: none;
+  }
+}
