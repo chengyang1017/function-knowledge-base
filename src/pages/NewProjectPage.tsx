@@ -18,6 +18,7 @@ type ImportedFile = {
 
 type ImportStage =
   | 'idle'
+  | 'waiting'
   | 'reading'
   | 'ready'
   | 'saving'
@@ -77,26 +78,6 @@ function NewProjectPage() {
       });
   }, []);
 
-  useEffect(() => {
-    const input = directoryInputRef.current;
-    if (!input) {
-      return;
-    }
-
-    const handleCancel = () => {
-      if (files.length > 0) {
-        setStage('ready');
-        setMessage(`已取消重新选择，仍保留当前 ${files.length} 个 Dart 文件。`);
-      } else {
-        setStage('idle');
-        setMessage('已取消选择目录。');
-      }
-    };
-
-    input.addEventListener('cancel', handleCancel);
-    return () => input.removeEventListener('cancel', handleCancel);
-  }, [files.length]);
-
   const leafCategories = useMemo(() => {
     const parentIds = new Set(
       categories
@@ -120,30 +101,10 @@ function NewProjectPage() {
       .filter(Boolean),
   ).size;
 
-  function openDirectoryPicker() {
-    if (reading || saving) {
-      return;
-    }
-
-    if (files.length === 0) {
-      setStage('idle');
-      setMessage('');
-    }
-
-    window.requestAnimationFrame(() => {
-      directoryInputRef.current?.click();
-    });
-  }
-
   async function chooseDirectory(fileList: FileList | null) {
     if (!fileList || fileList.length === 0) {
-      if (files.length > 0) {
-        setStage('ready');
-        setMessage(`未选择新目录，仍保留当前 ${files.length} 个 Dart 文件。`);
-      } else {
-        setStage('idle');
-        setMessage('已取消选择目录。');
-      }
+      setStage('idle');
+      setMessage('已取消选择目录。');
       return;
     }
 
@@ -366,22 +327,20 @@ function NewProjectPage() {
             <p>浏览器只会保存 <code>lib/**/*.dart</code> 到知识库；android、ios、assets、build、.dart_tool 不会进入数据库。</p>
           </div>
 
-          <button
-            type="button"
-            className="project-folder-button"
-            onClick={openDirectoryPicker}
-            disabled={reading || saving}
-          >
+          <label className="project-folder-button">
             {reading ? '正在读取…' : files.length > 0 ? '重新选择目录' : '选择项目目录'}
-          </button>
-          <input
-            ref={directoryInputRef}
-            className="project-folder-input"
-            type="file"
-            multiple
-            disabled={reading || saving}
-            onChange={(event) => void chooseDirectory(event.target.files)}
-          />
+            <input
+              ref={directoryInputRef}
+              className="project-folder-input"
+              type="file"
+              multiple
+              disabled={reading || saving}
+              onClick={(event) => {
+                event.currentTarget.value = '';
+              }}
+              onChange={(event) => void chooseDirectory(event.target.files)}
+            />
+          </label>
         </div>
 
         {(message || stage === 'reading' || stage === 'saving') && (
