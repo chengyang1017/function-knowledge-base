@@ -16,6 +16,17 @@ import './library-top-nav.css';
 
 type ViewCounts = Record<string, number>;
 
+type FunctionSourceFilter =
+  | 'all'
+  | 'class'
+  | 'file'
+  | 'manual';
+
+type FunctionSourceKind = Exclude<
+  FunctionSourceFilter,
+  'all'
+>;
+
 type LibraryTopNavProps = {
   categories: Category[];
   functions: FunctionEntry[];
@@ -44,6 +55,45 @@ const CATEGORY_LEVEL_LABELS = [
   '分类',
   '子分类',
 ] as const;
+
+const SOURCE_FILTER_OPTIONS: Array<{
+  value: FunctionSourceFilter;
+  label: string;
+}> = [
+  {
+    value: 'all',
+    label: '全部',
+  },
+  {
+    value: 'class',
+    label: '项目 Class',
+  },
+  {
+    value: 'file',
+    label: '项目文件',
+  },
+  {
+    value: 'manual',
+    label: '自己添加',
+  },
+];
+
+function functionSourceKind(
+  functionEntry: FunctionEntry,
+): FunctionSourceKind {
+  if (functionEntry.sourceClassId != null) {
+    return 'class';
+  }
+
+  if (
+    functionEntry.sourceFileId != null ||
+    functionEntry.extracted
+  ) {
+    return 'file';
+  }
+
+  return 'manual';
+}
 
 function getCategoryPath(
   categoryId: number,
@@ -191,6 +241,39 @@ function LibraryTopNav({
   const [categoryPanelOpen, setCategoryPanelOpen] =
     useState(true);
 
+  const [sourceFilter, setSourceFilter] =
+    useState<FunctionSourceFilter>('all');
+
+  const sourceCounts = useMemo(() => {
+    const counts: Record<
+      FunctionSourceFilter,
+      number
+    > = {
+      all: functions.length,
+      class: 0,
+      file: 0,
+      manual: 0,
+    };
+
+    functions.forEach((functionEntry) => {
+      counts[functionSourceKind(functionEntry)] += 1;
+    });
+
+    return counts;
+  }, [functions]);
+
+  const visibleFunctions = useMemo(
+    () =>
+      sourceFilter === 'all'
+        ? functions
+        : functions.filter(
+            (functionEntry) =>
+              functionSourceKind(functionEntry) ===
+              sourceFilter,
+          ),
+    [functions, sourceFilter],
+  );
+
   useEffect(() => {
     if (selectedFunction?.categoryId != null) {
       setActiveCategoryId(
@@ -263,7 +346,7 @@ function LibraryTopNav({
   const activeCategoryFunctions =
     activeCategoryId === null
       ? []
-      : functions.filter(
+      : visibleFunctions.filter(
           (functionEntry) =>
             functionEntry.categoryId ===
             activeCategoryId,
@@ -322,12 +405,12 @@ function LibraryTopNav({
             <div className="library-search-results">
               <div className="library-search-results-heading">
                 <strong>搜索结果</strong>
-                <span>{functions.length}</span>
+                <span>{visibleFunctions.length}</span>
               </div>
 
               <div className="library-search-results-list">
-                {functions.length > 0 ? (
-                  functions.map((functionEntry) => (
+                {visibleFunctions.length > 0 ? (
+                  visibleFunctions.map((functionEntry) => (
                     <button
                       key={functionEntry.id}
                       type="button"
@@ -488,7 +571,7 @@ function LibraryTopNav({
             <strong>浏览分类</strong>
             <span>
               {categoryPanelOpen
-                ? '四层分类固定显示；未选中的下一层保持为空'
+                ? '先按函数来源区分，再按四层分类浏览'
                 : collapsedPathLabel}
             </span>
           </div>
@@ -510,6 +593,40 @@ function LibraryTopNav({
         {categoryPanelOpen && (
           <>
             <div className="library-taxonomy-rows">
+              <div className="library-taxonomy-row">
+                <div className="library-taxonomy-label">
+                  来源
+                </div>
+
+                <div className="library-taxonomy-options">
+                  {SOURCE_FILTER_OPTIONS.map(
+                    (option) => {
+                      const active =
+                        sourceFilter === option.value;
+
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={`library-taxonomy-option ${
+                            active ? 'active' : ''
+                          }`}
+                          aria-pressed={active}
+                          onClick={() =>
+                            setSourceFilter(option.value)
+                          }
+                        >
+                          <span>{option.label}</span>
+                          <small>
+                            {sourceCounts[option.value]}
+                          </small>
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+              </div>
+
               {CATEGORY_LEVEL_LABELS.map(
                 (label, levelIndex) => {
                   const levelCategories =
@@ -535,7 +652,7 @@ function LibraryTopNav({
                               countFunctionsInCategory(
                                 category.id,
                                 categories,
-                                functions,
+                                visibleFunctions,
                               );
 
                             return (
@@ -621,7 +738,7 @@ function LibraryTopNav({
                   </div>
                 ) : (
                   <div className="library-function-empty">
-                    这个分类已经建立，但当前筛选下还没有知识点。
+                    这个分类已经建立，但当前来源或其他筛选下还没有知识点。
                   </div>
                 )}
               </div>
